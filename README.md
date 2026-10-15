@@ -1,22 +1,24 @@
 # SettleSum
 
-**B2B cash application, multi-state lump-sum reconciliation, and margin recovery.**
+**Match payments, explain deductions, and identify recoverable margin.**
 
-SettleSum reconciles bank deposits to computed combinations of open invoices, including valid early-payment discounts, expired discounts, documented short-pays, and permitted wire fees. Every match includes an exact-cent equation and a verified double-entry journal. The financial terminal starts with an empty ledger and supports an interactive live-case builder, source edits, flexible CSV imports, PDF/text remittances, and accounting exports.
+**[Open the live app](https://settlesum.vercel.app)** · [Three-minute pitch script](docs/PITCH_VIDEO.md) · [UX research and decisions](docs/UX_RESEARCH.md)
+
+SettleSum reconciles bank deposits to computed combinations of open invoices, including valid early-payment discounts, expired discounts, documented short-pays, and permitted wire fees. Every match includes an exact-cent equation and a verified double-entry journal. The financial workspace starts with an empty ledger and supports an interactive live-case builder, source edits, flexible CSV imports, PDF/text remittances, and accounting exports.
 
 All included business records are **SYNTHETIC BENCHMARK DATA — modeled on B2B wholesale AR ledgers**. No included record represents a real customer transaction.
 
 ![SettleSum opens with an empty financial ledger](docs/blank-ledger.png)
 
-The initial workspace contains no sample transactions or computed results. See the [workspace verification record](docs/WORKSPACE_VERIFICATION.md).
+The welcome screen explains the task and offers create, import, and sample paths. The initial workspace contains no transactions or computed results. See the [workspace verification record](docs/WORKSPACE_VERIFICATION.md).
 
 ## Start from zero
 
-The terminal opens with **zero invoices, zero deposits, no remittances, and no computed results**. Reloading starts a new blank session; records are held in browser memory.
+The app opens with **zero invoices, zero deposits, no remittances, and no computed results**. Start with **Build a live case**, **Import CSV files**, or the explicitly synthetic **Load sample ledger** option. Reloading starts a new blank session; records are held in browser memory.
 
-- **NEW BLANK LEDGER** clears all source records, results, selected records, and solver settings.
-- **+ BUILD LIVE TEST CASE** opens a composer. Enter any customer, add/remove invoice and deposit rows, select invoices for an exact sum preview, and optionally paste a remittance claim. Choose a fresh ledger or append to the current ledger. The exact-sum, $15 wire-fee, and 2% helpers only fill source amounts. **RUN SOLVER ON THIS LEDGER** sends those records to Python; matches, invoice states, telemetry, and journals are returned by the real solver.
-- **LOAD 36-ROW SAMPLE CSV** explicitly loads the synthetic benchmark source records and reconciles them from scratch. Samples are never loaded on startup.
+- **New blank ledger** clears all source records, results, selected records, and solver settings.
+- **Build a live case** opens a composer. Enter any customer, add/remove invoice and deposit rows, select invoices for an exact sum preview, and optionally paste a remittance claim. Choose a fresh ledger or append to the current ledger. The exact-sum, $15 wire-fee, and 2% helpers only fill source amounts. **Reconcile this ledger** sends those records to Python; matches, invoice states, telemetry, and journals are returned by the real solver.
+- **Load sample ledger** explicitly loads the synthetic benchmark source records and reconciles them from scratch. Samples are never loaded on startup.
 
 **Import data** includes blank invoice/deposit templates and current source-ledger downloads. Download the ledger ZIP, extract its two CSV files, edit them in a spreadsheet, clear the workspace, and import each file. Either import order works: the first file is staged, and reconciliation runs once both invoices and deposits exist. The ZIP also contains remittance JSON as a source backup; attach claims through the PDF/text importer when restoring a ledger.
 
@@ -55,7 +57,13 @@ Import **Syedsaadhhh/SettleSum** into Vercel with the repository root as the **R
 
 Optionally add `GEMINI_API_KEY` as a server-side Vercel environment variable to enable Gemini remittance extraction. Never use a `VITE_` prefix for that secret. Without a key, deterministic local parsing remains available. Vercel's function request/response body limit is 4.5 MB, which takes precedence over the local API's larger upload limits. Keep uploaded files and reconciliation JSON below that limit. Search remains bounded by the configured node budget and the platform's execution limits.
 
-These instructions prepare deployment; verification below exercises the local ASGI entry point and browser flows. No hosted deployment is implied by a successful local build.
+The production app is deployed at **https://settlesum.vercel.app**. Pushing to `main` triggers a new Vercel production deployment; GitHub Actions runs the repository checks independently. The latest UX release is verified through the hosted browser/API flow as well as local checks.
+
+## Final UX and pitch
+
+The first screen describes the finance task before showing any engine metrics. Larger Inter text, labeled navigation, calmer surfaces, and clear first actions replace the dense terminal chrome. Reconciled ledgers show three business outcomes; actual timing and node counts remain accessible through **Solver details**. The invoice equation and balanced journal remain visible in the payment breakdown. See [UX research](docs/UX_RESEARCH.md) and [release verification](docs/FINAL_UX_VERIFICATION.md).
+
+[**PITCH_VIDEO.md**](docs/PITCH_VIDEO.md) contains a roughly three-minute narration with a matching screen/click plan, exact custom-case inputs, optional scenes under the five-minute cap, and the Pakistan-time recording/upload schedule.
 
 ## Verify
 
@@ -104,7 +112,7 @@ Baseline: **7/8 deposits**, **$87,982.00** reconciled cash, **$164.00** identifi
 3. Change clearing date from **2026-10-09** to **2026-10-19**.
 4. Click **RE-SOLVE LEDGER**.
 
-Its two discounts retain the same mathematical payment values but move from **GL 4910** to **GL 1215**. Identified recovery rises from **$164.00 to $604.00**. LOAD 36-ROW SAMPLE CSV restores the original source records and runs the solver again.
+Its two discounts retain the same mathematical payment values but move from **GL 4910** to **GL 1215**. Identified recovery rises from **$164.00 to $604.00**. Load sample ledger restores the original source records and runs the solver again.
 
 Changing Apex DEP-9001 from $14,835.00 to $14,850.00 removes the inferred $15 fee. Adding only $0.01 results in an exception under the default fee rules. These outcomes are computed from the submitted records; no deposit ID is a solver instruction.
 

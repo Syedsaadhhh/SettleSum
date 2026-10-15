@@ -7,6 +7,7 @@ Uses a real browser and actual API responses. No fake latency or request mocks.
 """
 
 import argparse
+import re
 import csv
 import io
 from pathlib import Path
@@ -30,14 +31,14 @@ with sync_playwright() as p:
     errors = []
     page.on("pageerror", lambda error: errors.append(str(error)))
     page.goto(args.url)
-    page.get_by_role("button", name="LOAD 36-ROW SAMPLE CSV").click()
+    page.get_by_role("button", name="Load sample ledger").click()
     page.get_by_text("87.5%", exact=True).wait_for()
     page.evaluate("document.fonts.ready")
     assert not page.evaluate("document.documentElement.scrollWidth > innerWidth")
     page.screenshot(path=str(shots / "desktop.png"), full_page=True)
 
     # Discount date changes must reach Python and genuinely change accounting.
-    page.get_by_role("button", name="Live input simulator WHAT-IF").click()
+    page.get_by_role("button", name="Try a change").click()
     page.get_by_role("combobox").select_option("DEP-9002")
     page.get_by_label("Clearing date").fill("2026-10-19")
     with page.expect_response(
@@ -71,7 +72,7 @@ with sync_playwright() as p:
     page.get_by_role("button", name="Exceptions 1", exact=True).click()
     page.locator(".deposit-row").click()
     assert page.get_by_text("No exact reconciliation found", exact=True).is_visible()
-    page.get_by_role("button", name="LOAD 36-ROW SAMPLE CSV", exact=True).click()
+    page.get_by_role("button", name="Load sample ledger", exact=True).click()
     page.get_by_text("87.5%", exact=True).wait_for()
 
     # A real CSV download and an empty upload failure.
@@ -79,7 +80,7 @@ with sync_playwright() as p:
     with page.expect_download() as downloaded:
         page.get_by_role("button", name="QuickBooks journal CSV", exact=True).click()
     assert "Cash - Operating Bank Account" in Path(downloaded.value.path()).read_text()
-    page.get_by_role("button", name="Import data", exact=True).click()
+    page.get_by_role("button", name=re.compile(r"^Import (data|CSV files)$")).click()
     page.get_by_label("Upload file").set_input_files(
         {"name": "empty.csv", "mimeType": "text/csv", "buffer": b""}
     )
@@ -101,7 +102,7 @@ with sync_playwright() as p:
     assert (
         response.value.json()["summary"]["unearned_discounts_recovered_cents"] == 40400
     )
-    page.get_by_role("button", name="LOAD 36-ROW SAMPLE CSV", exact=True).click()
+    page.get_by_role("button", name="Load sample ledger", exact=True).click()
     page.get_by_text("87.5%", exact=True).wait_for()
 
     # Entirely new customers, invoices, and deposits through the upload UI.
@@ -116,7 +117,9 @@ with sync_playwright() as p:
     )
 
     def upload_csv(kind, content):
-        page.get_by_role("button", name="Import data", exact=True).click()
+        page.get_by_role(
+            "button", name=re.compile(r"^Import (data|CSV files)$")
+        ).click()
         page.get_by_label("Dataset to replace").select_option(kind)
         page.get_by_label("Upload file").set_input_files(
             {"name": f"{kind}.csv", "mimeType": "text/csv", "buffer": content.encode()}
@@ -142,7 +145,7 @@ with sync_playwright() as p:
     }
 
     # Add a genuine parsed claim, then change cash to its exact documented net.
-    page.get_by_role("button", name="Import data", exact=True).click()
+    page.get_by_role("button", name=re.compile(r"^Import (data|CSV files)$")).click()
     page.get_by_role("button", name="PDF / text remittance", exact=True).click()
     page.get_by_label("Remittance text", exact=True).fill(
         "Customer: Orbit Packaging Ltd\nDeducting $27 from INV-ORBIT-A for damaged goods"
@@ -151,7 +154,7 @@ with sync_playwright() as p:
     page.get_by_text("1 invoice references extracted", exact=True).wait_for()
     page.get_by_role("button", name="APPLY & RECONCILE", exact=True).click()
     page.get_by_role("dialog").wait_for(state="hidden")
-    page.get_by_role("button", name="Live input simulator WHAT-IF").click()
+    page.get_by_role("button", name="Try a change").click()
     page.get_by_label("Deposit amount · USD", exact=True).fill("1659.00")
     with page.expect_response(
         lambda r: "/api/reconcile" in r.url and r.request.method == "POST"
@@ -161,7 +164,7 @@ with sync_playwright() as p:
     page.get_by_role("dialog").wait_for(state="hidden")
 
     # Return screenshots to the labeled benchmark in both device sizes.
-    page.get_by_role("button", name="LOAD 36-ROW SAMPLE CSV", exact=True).click()
+    page.get_by_role("button", name="Load sample ledger", exact=True).click()
     page.get_by_text("87.5%", exact=True).wait_for()
     page.locator(".proof-inspector").evaluate("(el)=>el.scrollTop=el.scrollHeight")
     page.screenshot(path=str(shots / "desktop-journal.png"), full_page=True)

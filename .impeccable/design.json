@@ -1,40 +1,183 @@
 {
-  "version": 1,
-  "mode": "operate",
-  "authority": "user specification",
-  "colors": {
-    "background": "#0B0E14",
-    "panel": "#11161F",
-    "border": "#1E2633",
-    "text": "#E6EDF3",
-    "muted": "#7D8590",
-    "green": "#2EA043",
-    "amber": "#D29922",
-    "red": "#F85149",
-    "blue": "#388BFD"
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-15T18:48:56.253092+00:00",
+  "title": "Design System: SettleSum",
+  "extensions": {
+    "authority": {
+      "mode": "operate",
+      "source": "User-approved minimalist replacement, recorded from shipped CSS and components",
+      "context": "Focused code-led design; bundled Impeccable launcher unavailable. No human ten-second usability study claimed."
+    },
+    "sourceFiles": [
+      "frontend/src/styles.css",
+      "frontend/src/App.jsx",
+      "frontend/src/components/WelcomeWorkspace.jsx",
+      "frontend/src/components/LedgerHeader.jsx",
+      "frontend/src/components/MathProofInspector.jsx",
+      "frontend/src/components/LiveCaseComposer.jsx",
+      "frontend/src/components/RemittanceDropzone.jsx"
+    ],
+    "breakpoints": [
+      {
+        "name": "wide-welcome",
+        "value": "1700px",
+        "query": "min-width"
+      },
+      {
+        "name": "compact-desktop",
+        "value": "1300px",
+        "query": "max-width"
+      },
+      {
+        "name": "icon-navigation",
+        "value": "1100px",
+        "query": "max-width"
+      },
+      {
+        "name": "stacked-workspace",
+        "value": "850px",
+        "query": "max-width"
+      },
+      {
+        "name": "mobile",
+        "value": "550px",
+        "query": "max-width"
+      }
+    ],
+    "layout": {
+      "scrolling": "normal document flow at every width; no fixed-height desktop proof pane",
+      "navigation": "196px; 76px at <=1100px; 56px at <=550px",
+      "main": "max-width 1740px; padding 26px 32px 40px, 24px inline at <=1300px, 22px 16px 30px at <=550px",
+      "welcome": "max-width 1240px; 1.25fr 1fr; gap 64px, 90px at >=1700px, 32px at <=1300px, 30px at <=1100px; single column, max-width 620px and gap 35px at <=850px",
+      "workbench": "minmax(300px, 0.8fr) minmax(0, 1.4fr); 20px gap; second fraction 1.3fr and gap16px at <=1300px; stacks at <=850px",
+      "register": "sticky top24px; internal list max-height580px; static and list350px at <=850px",
+      "tables": "horizontal scroll; invoice/journal min-width575px; source min-width850px",
+      "drawers": "100dvh, overflow-y:auto; ordinary540px, composer min(1080px,100%); max-width100%; sticky heading and composer submit strip"
+    },
+    "responsiveTypography": {
+      "root": "15px; 14px at <=550px",
+      "welcomeHeading": "46px; 54px >=1700px; 39px <=1300px; 38px <=1100px; 42px <=850px; 32px <=550px",
+      "welcomeGuidance": "17px; 16px <=1300px; 15px <=550px",
+      "taskHeading": "29px; 26px <=550px",
+      "summaryValues": "31px; 27px <=1300px; 28px <=850px; 30px <=550px",
+      "financialTableCells": "14px",
+      "depositAmounts": "14px on desktop and mobile",
+      "metadata": "generally12\u201313px; equation small unit11px",
+      "composerFields": "14px; 16px <=550px"
+    },
+    "shadows": [
+      {
+        "name": "drawer",
+        "value": "-16px 0 50px #0005",
+        "purpose": "Overlay separation"
+      },
+      {
+        "name": "export-menu",
+        "value": "0 12px 32px #0005",
+        "purpose": "Export menu elevation"
+      },
+      {
+        "name": "solver-popover",
+        "value": "0 12px 30px #0006",
+        "purpose": "Disclosed technical metrics"
+      }
+    ],
+    "motion": [
+      {
+        "name": "button-state",
+        "value": "background 0.16s, border-color 0.16s",
+        "purpose": "Hover feedback"
+      },
+      {
+        "name": "reduced-motion",
+        "value": "transitions:none; animation:none; scroll-behavior:auto",
+        "purpose": "Honor prefers-reduced-motion"
+      }
+    ],
+    "focus": "2px solid var(--blue); outline-offset4px; buttons, links, fields and summary elements",
+    "scrim": "#050a12c9; backdrop-filter:blur(3px); data surfaces remain opaque",
+    "states": {
+      "welcome": "Empty workbench only: headline, explanation, Build a live case, Import CSV files, separate synthetic sample and three-step guide",
+      "staged": "One source dataset may be imported before its counterpart; run when both exist",
+      "loaded": "Three business outcomes, journal status/variance, register and proof inspector; balanced status requires at least one match, all-unmatched runs say No journal generated, staged inputs say Awaiting calculation",
+      "technicalDetails": "Measured nodes/time only inside Solver details and Search & ranking details disclosures",
+      "pending": "Explicit previous-run warning after edits; stale exports disabled",
+      "composer": "Grouped customer/invoice/payment inputs, optional remittance and amount helpers; sticky submit strip remains within drawer viewport"
+    }
   },
-  "paletteUsage": "colors records the user-pinned base palette; foregroundColors and structuralLines record the rendered implementation tokens",
-  "foregroundColors": {
-    "text": "#E6EDF3",
-    "muted": "#929BA8",
-    "green": "#5AC77C",
-    "amber": "#E6B450",
-    "red": "#FF827B",
-    "blue": "#70ACFF"
-  },
-  "structuralLines": {
-    "default": "#242C38",
-    "soft": "#1B232E",
-    "width": "1px"
-  },
-  "fonts": {
-    "labels": "Inter",
-    "data": "IBM Plex Mono",
-    "loading": "self-hosted bundled Fontsource files",
-    "numerals": "tabular"
-  },
-  "corners": "2px default buttons and fields; square panels, tabs and register rows; 3px navigation icon buttons",
-  "structure": "above 800px: fixed 100dvh desktop viewport with independently scrolling register rows and proof inspector; at 800px and below: stacked normal page flow with a vertically scrolling deposit list capped at 380px",
-  "navigationRail": "62px; 52px at 1000px and below; 46px at 550px and below",
-  "accountingTables": "dense, horizontally scrollable tables with 1px rules"
+  "components": [
+    {
+      "name": "Primary button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main reconciliation action.",
+      "html": "<button class=\"ds-primary\">Reconcile this ledger</button>",
+      "css": ".ds-primary { background:#a8ceff; color:#102138; border:1px solid transparent; border-radius:8px; padding:9px 14px; min-height:40px; font:600 14px/1.35 Inter,Arial,sans-serif; cursor:pointer; transition:background .16s,border-color .16s; } .ds-primary:hover { background:#c3ddff; } .ds-primary:focus-visible { outline:2px solid #9ac6ff; outline-offset:4px; }"
+    },
+    {
+      "name": "Secondary button",
+      "kind": "button",
+      "description": "Import and supporting actions.",
+      "html": "<button class=\"ds-secondary\">Import CSV files</button>",
+      "css": ".ds-secondary { background:#1b2533; color:#f2f4f8; border:1px solid #3a485e; border-radius:8px; padding:9px 14px; min-height:40px; font:500 14px/1.35 Inter,Arial,sans-serif; cursor:pointer; transition:background .16s,border-color .16s; } .ds-secondary:hover { background:#263448; border-color:#60718c; } .ds-secondary:focus-visible { outline:2px solid #9ac6ff; outline-offset:4px; }"
+    },
+    {
+      "name": "Text field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Readable data entry.",
+      "html": "<input class=\"ds-field\" aria-label=\"Invoice amount\" placeholder=\"0.00\">",
+      "css": ".ds-field { background:#0f1621; color:#f2f4f8; border:1px solid #42516a; border-radius:7px; padding:11px 12px; font:15px/1.4 Inter,Arial,sans-serif; caret-color:#9ac6ff; } .ds-field::placeholder { color:#a0adbf; opacity:1; } .ds-field:focus-visible { outline:2px solid #9ac6ff; outline-offset:4px; }"
+    },
+    {
+      "name": "Navigation item",
+      "kind": "nav",
+      "description": "Labeled desktop navigation becomes an icon rail.",
+      "html": "<button class=\"ds-nav\">Payment reconciliation</button>",
+      "css": ".ds-nav { background:#24344a; color:#c9e0ff; border:0; border-radius:8px; padding:12px; min-height:40px; text-align:left; font:500 14px/1.35 Inter,Arial,sans-serif; cursor:pointer; } .ds-nav:hover { background:#202b3b; color:#f2f4f8; } .ds-nav:focus-visible { outline:2px solid #9ac6ff; outline-offset:4px; }"
+    },
+    {
+      "name": "State badge",
+      "kind": "chip",
+      "description": "Compact accounting status, expressed in text.",
+      "html": "<span class=\"ds-badge\">Verified</span>",
+      "css": ".ds-badge { display:inline-flex; padding:3px 7px; border:1px solid #53775e; border-radius:4px; color:#8ed6ad; font:500 12px/1.5 Inter,Arial,sans-serif; white-space:nowrap; }"
+    },
+    {
+      "name": "Welcome guide",
+      "kind": "card",
+      "refersTo": "welcome-guide",
+      "description": "Three-step explanation beside the first action.",
+      "html": "<aside class=\"ds-guide\"><h2>From payment to proof.</h2><p>Add the payment. See what matches. Review every cent.</p></aside>",
+      "css": ".ds-guide { background:#151c27; color:#f2f4f8; border:1px solid #2a3545; border-radius:14px; padding:32px; font:14px/1.65 Inter,Arial,sans-serif; } .ds-guide h2 { margin:0; font-size:22px; font-weight:500; } .ds-guide p { color:#b0bac8; margin:8px 0 0; }"
+    },
+    {
+      "name": "Solver disclosure",
+      "kind": "custom",
+      "description": "Technical timing is available on demand.",
+      "html": "<details class=\"ds-details\"><summary>Solver details</summary><p>Measured Python execution and actual search nodes appear here after reconciliation.</p></details>",
+      "css": ".ds-details { color:#b0bac8; font:12px/1.5 Inter,Arial,sans-serif; } .ds-details summary { cursor:pointer; } .ds-details[open] summary { color:#9ac6ff; } .ds-details summary:focus-visible { outline:2px solid #9ac6ff; outline-offset:4px; } .ds-details p { background:#202c3c; border:1px solid #53647d; border-radius:10px; padding:18px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "A calm cash-application workspace",
+    "overview": "User-approved minimalist redesign replaces the cramped terminal while retaining charcoal/slate, Inter, IBM Plex Mono, and exact financial proof. Business outcomes and the first action lead; measured technical depth is disclosed progressively.",
+    "keyCharacteristics": [
+      "Readable hierarchy",
+      "Generous separation",
+      "Opaque slate surfaces",
+      "Restrained ice-blue action",
+      "Tabular financial data",
+      "Normal document scrolling"
+    ],
+    "dos": [
+      "Explain the first action quickly",
+      "Keep synthetic and pending-result labels explicit",
+      "Preserve 14px financial values and horizontal table scrolling"
+    ],
+    "donts": [
+      "Restore the cramped fixed-height terminal",
+      "Invent telemetry or collection claims"
+    ]
+  }
 }

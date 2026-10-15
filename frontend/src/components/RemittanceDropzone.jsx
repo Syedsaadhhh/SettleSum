@@ -151,11 +151,11 @@ export default function RemittanceDropzone({
         </div>
         {tab === "csv" ? (
           <>
-            <div
+            <details
               className="csv-tools"
               aria-label="CSV templates and source exports"
             >
-              <span className="small-label">CSV TEMPLATES & SOURCE FILES</span>
+              <summary>CSV templates & downloads</summary>
               <button onClick={() => template("invoices")}>
                 Download Blank Invoice CSV Template
               </button>
@@ -183,7 +183,7 @@ export default function RemittanceDropzone({
               >
                 Download {kind === "invoices" ? "invoice" : "deposit"} CSV only
               </button>
-            </div>
+            </details>
             <label className="field-label">
               Dataset to replace
               <select
@@ -240,8 +240,8 @@ export default function RemittanceDropzone({
           </strong>
           <span>
             {tab === "csv"
-              ? "UTF-8 CSV · up to 5 MB"
-              : "Text-based PDF or TXT · up to 10 MB"}
+              ? "UTF-8 CSV · keep files under 4 MB"
+              : "Text-based PDF or TXT · keep files under 4 MB"}
           </span>
           <button onClick={() => fileRef.current.click()} disabled={pending}>
             Browse files <ArrowUpRight size={13} />
@@ -259,7 +259,7 @@ export default function RemittanceDropzone({
           />
         </div>
         {tab === "csv" ? (
-          <details className="schema-help" open>
+          <details className="schema-help">
             <summary>Flexible column schema</summary>
             <pre>
               {kind === "invoices"

@@ -1,6 +1,7 @@
 """Real-browser torture tests. No request routing, mocked responses, or timed sleeps."""
 
 import argparse
+import re
 import csv
 import io
 import json
@@ -27,7 +28,7 @@ with sync_playwright() as p:
     errors = []
     page.on("pageerror", lambda error: errors.append(str(error)))
     page.goto(options.url)
-    page.get_by_role("button", name="LOAD 36-ROW SAMPLE CSV").click()
+    page.get_by_role("button", name="Load sample ledger").click()
     expect(page.locator(".metric strong").first).to_have_text("87.5%")
     page.evaluate("document.fonts.ready")
     assert not page.evaluate("document.documentElement.scrollWidth > innerWidth")
@@ -45,7 +46,9 @@ with sync_playwright() as p:
         return document, payload
 
     def upload_csv(kind, source):
-        page.get_by_role("button", name="Import data", exact=True).click()
+        page.get_by_role(
+            "button", name=re.compile(r"^Import (data|CSV files)$")
+        ).click()
         page.get_by_label("Dataset to replace").select_option(kind)
         page.get_by_label("Upload file").set_input_files(
             {"name": f"{kind}.csv", "mimeType": "text/csv", "buffer": source.encode()}
@@ -62,7 +65,7 @@ with sync_playwright() as p:
     def simulate(
         amount=None, date=None, fees=None, discounts=None, band=None, shift=False
     ):
-        page.get_by_role("button", name="Live input simulator WHAT-IF").click()
+        page.get_by_role("button", name="Try a change").click()
         if amount is not None:
             page.get_by_label("Deposit amount · USD", exact=True).fill(amount)
         if date is not None:
@@ -101,10 +104,12 @@ with sync_playwright() as p:
         expect(page.locator(".metric strong").nth(3)).to_have_text(
             f"{summary['total_nodes_explored']:,}"
         )
+        page.get_by_text("Solver details", exact=True).click()
         displayed = float(
             page.locator(".metric strong").nth(4).inner_text().replace("ms", "").strip()
         )
         assert abs(displayed - summary["solve_time_ms"]) <= 0.00051
+        page.get_by_text("Solver details", exact=True).click()
         expect(page.locator(".inspector-amount strong")).to_have_text(
             money(match["amount_cents"])
         )
@@ -113,14 +118,18 @@ with sync_playwright() as p:
                 page.get_by_text("No exact reconciliation found", exact=True)
             ).to_be_visible()
             assert page.locator(".journal-table").count() == 0
+            if not summary["matched_count"]:
+                expect(page.locator(".ledger-proof-strip")).to_contain_text(
+                    "No journal generated"
+                )
             return
         rows = page.locator(".invoice-proof-table tbody tr")
         assert rows.count() == len(match["invoices"])
         labels = {
-            "FULL": "FULL VALUE",
-            "EARNED_DISCOUNT": "VALID DISCOUNT",
-            "UNEARNED_DISCOUNT": "UNEARNED DISCOUNT",
-            "REMITTANCE_SHORTPAY": "SHORT-PAY CLAIM",
+            "FULL": "Full value",
+            "EARNED_DISCOUNT": "Valid discount",
+            "UNEARNED_DISCOUNT": "Expired discount",
+            "REMITTANCE_SHORTPAY": "Short-pay claim",
         }
         for index, item in enumerate(match["invoices"]):
             expect(rows.nth(index).locator("td").nth(0).locator("strong")).to_have_text(
@@ -292,7 +301,7 @@ with sync_playwright() as p:
 
     upload_csv("invoices", invoices)
     upload_csv("deposits", deposits.replace("7985.00", "7750.00"))
-    page.get_by_role("button", name="Import data", exact=True).click()
+    page.get_by_role("button", name=re.compile(r"^Import (data|CSV files)$")).click()
     page.get_by_role("button", name="PDF / text remittance", exact=True).click()
     page.get_by_label("Remittance text", exact=True).fill(
         "Remittance Advice: Orbital Robotics Corp applying $250.00 deduction on INV-X901 for cracked actuator housing per DM-771."
@@ -317,7 +326,7 @@ with sync_playwright() as p:
     )
 
     # Precision failures stay visible and cannot replace the active dataset.
-    page.get_by_role("button", name="Import data", exact=True).click()
+    page.get_by_role("button", name=re.compile(r"^Import (data|CSV files)$")).click()
     page.get_by_label("Dataset to replace").select_option("invoices")
     huge = term_invoice.replace(
         "amount,discount_terms", "amount_cents,discount_terms"
@@ -337,7 +346,7 @@ with sync_playwright() as p:
         "unsafe browser currency is rejected explicitly; current computed ledger remains intact"
     )
 
-    page.get_by_role("button", name="LOAD 36-ROW SAMPLE CSV", exact=True).click()
+    page.get_by_role("button", name="Load sample ledger", exact=True).click()
     expect(page.locator(".metric strong").first).to_have_text("87.5%")
     page.get_by_role("button", name="About the solver", exact=True).click()
     page.keyboard.press("Escape")

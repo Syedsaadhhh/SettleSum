@@ -101,8 +101,8 @@ export function saveBlob(blob, filename) {
   URL.revokeObjectURL(url);
 }
 export const stateLabels = {
-  FULL: "FULL VALUE",
-  EARNED_DISCOUNT: "VALID DISCOUNT",
-  UNEARNED_DISCOUNT: "UNEARNED DISCOUNT",
-  REMITTANCE_SHORTPAY: "SHORT-PAY CLAIM",
+  FULL: "Full value",
+  EARNED_DISCOUNT: "Valid discount",
+  UNEARNED_DISCOUNT: "Expired discount",
+  REMITTANCE_SHORTPAY: "Short-pay claim",
 };

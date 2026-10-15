@@ -53,7 +53,7 @@ export default function MathProofInspector({
   return (
     <section className="proof-inspector">
       <div className="panel-heading">
-        <h2>Reconciliation inspector</h2>
+        <h2>Payment breakdown</h2>
         <span className="small-label mono">{match.deposit_id}</span>
       </div>
       <div className="inspector-identity">
@@ -67,17 +67,17 @@ export default function MathProofInspector({
           </h2>
           <p className="mono">
             {match.deposit_id} <span>/</span> {match.deposit_date}{" "}
-            <span>/</span> {match.bank_reference || "NO BANK REFERENCE"}
+            <span>/</span> {match.bank_reference || "No bank reference"}
           </p>
         </div>
         <div className="inspector-amount">
           <strong>{money(match.amount_cents)}</strong>
-          <span>NET BANK DEPOSIT</span>
+          <span>Payment received</span>
         </div>
       </div>
       <div className="inspector-meta">
         <span>
-          <Link2 size={12} /> ENTITY CONFIDENCE{" "}
+          <Link2 size={12} /> Payer match{" "}
           <b className="mono">{(match.counterparty.score * 100).toFixed(0)}%</b>
         </span>
         <button className="text-button" onClick={onSimulate}>
@@ -90,13 +90,13 @@ export default function MathProofInspector({
           className={tab === "proof" ? "active" : ""}
           onClick={() => setTab("proof")}
         >
-          Matching proof
+          Payment & invoices
         </button>
         <button
           className={tab === "sources" ? "active" : ""}
           onClick={() => setTab("sources")}
         >
-          Remittance & source <span>{relevantDocs.length}</span>
+          Source details <span>{relevantDocs.length}</span>
         </button>
       </div>
       {tab === "sources" ? (
@@ -162,7 +162,7 @@ export default function MathProofInspector({
                   <TriangleAlert size={16} />
                   <div>
                     <strong>
-                      Unearned discount detected{" "}
+                      Expired discount to reclaim{" "}
                       <span className="mono">{money(recovery)}</span>
                     </strong>
                     <p>
@@ -188,7 +188,7 @@ export default function MathProofInspector({
                 </div>
               )}
               <div className="section-heading">
-                <h3>Multi-state invoice equation</h3>
+                <h3>How this payment adds up</h3>
                 <span className="small-label">
                   {match.invoices.length} INVOICES · {match.candidate_count}{" "}
                   VALID SOLUTION{match.candidate_count !== 1 ? "S" : ""}
@@ -278,7 +278,7 @@ export default function MathProofInspector({
                 )}
                 <div className="equation-result">
                   <span>
-                    <Check size={14} /> EXACT DEPOSIT MATCH
+                    <Check size={14} /> Exact payment match
                   </span>
                   <b className="mono">
                     {money(match.amount_cents)} <small>USD</small>
@@ -286,7 +286,7 @@ export default function MathProofInspector({
                 </div>
               </div>
               <div className="section-heading journal-heading">
-                <h3>Double-entry journal</h3>
+                <h3>Accounting journal</h3>
                 <span className="small-label green">
                   <ShieldCheck size={12} /> BALANCED
                 </span>
@@ -404,10 +404,6 @@ export default function MathProofInspector({
           {match.search_complete
             ? "DETERMINISTIC SEARCH COMPLETE"
             : "SEARCH INCOMPLETE"}
-        </span>
-        <span className="mono">
-          {number(match.nodes_explored)} NODES /{" "}
-          {match.solve_time_ms.toFixed(3)} ms
         </span>
       </div>
     </section>

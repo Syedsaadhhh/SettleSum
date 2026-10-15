@@ -4,8 +4,6 @@ import { dateLabel, money } from "../utils";
 export default function ReconciliationGrid({
   result,
   sourceDeposits = [],
-  onBuild,
-  onImport,
   selectedId,
   onSelect,
   filter,
@@ -161,10 +159,6 @@ export default function ReconciliationGrid({
               Create invoices and deposits, or import your own CSV files.
               Results appear after the Python solver runs.
             </p>
-            <button className="primary-button" onClick={onBuild}>
-              Build a live case
-            </button>
-            <button onClick={onImport}>Import CSV files</button>
           </div>
         ) : (
           !rows.length && (

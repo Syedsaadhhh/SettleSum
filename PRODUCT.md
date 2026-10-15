@@ -21,7 +21,7 @@ A multi-state choice branch-and-bound algorithm dynamically evaluates conditiona
 CSV invoices and bank feeds; fresh audit JSON exports with source inputs and measured results; text/PDF remittances; deterministic entity resolution; live edits; journal and draft debit memo CSV exports. User-selected license: proprietary / all rights reserved. No hardcoded matches, artificial latency, invented telemetry, or external subset-sum solvers. Search limits must be visible. Synthetic data must be labeled. Recovery denotes identified debit memo amounts, not money collected.
 
 ## Brand Commitments
-Institutional ledger terminal. User-pinned carbon/slate palette, sharp structural borders, dense tables, tabular monospace data, balanced double-entry proofs. No pills, gradients, decorative illustration, chat UI, or emoji.
+Calm, readable minimalist finance workspace. Charcoal/slate surfaces, restrained ice-blue actions, generous separation, and softly rounded controls and panels. Inter for clear language; IBM Plex Mono and tabular numerals for financial and code data. Explain the first action quickly, present business outcomes before technical telemetry, disclose deeper proof progressively, and preserve honest synthetic labels and balanced double-entry proofs. No decorative illustration, gradients, chat UI, or emoji.
 
 ## Evidence on Hand
 36 explicitly synthetic invoices, 6 customers, 8 deposits, one text/PDF remittance. No real customer data or production performance claims.

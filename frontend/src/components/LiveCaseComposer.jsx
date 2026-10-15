@@ -132,8 +132,8 @@ export default function LiveCaseComposer({
   }
   return (
     <Drawer
-      title="Build live test case"
-      subtitle="Create source records. Run the exact same Python solver."
+      title="Build a live case"
+      subtitle="Add a customer, their invoices, and the payment received."
       onClose={onClose}
       wide
     >
@@ -192,7 +192,7 @@ export default function LiveCaseComposer({
             </label>
           </div>
           <div className="composer-section-heading">
-            <h3>01 / OPEN INVOICES</h3>
+            <h3>1. Add invoices</h3>
             <button
               type="button"
               onClick={() => setInvoices((rows) => [...rows, newInvoice()])}
@@ -295,7 +295,7 @@ export default function LiveCaseComposer({
           ))}
           <div className="composer-sum">
             <span>
-              AUTO-SUM SELECTED INVOICES{" "}
+              Selected invoice total{" "}
               <small>
                 {invoices.filter((r) => r.selected).length} selected
               </small>
@@ -305,7 +305,7 @@ export default function LiveCaseComposer({
             </strong>
           </div>
           <div className="composer-section-heading">
-            <h3>02 / BANK DEPOSITS</h3>
+            <h3>2. Add payments</h3>
             <button
               type="button"
               onClick={() =>
@@ -379,7 +379,7 @@ export default function LiveCaseComposer({
                 </label>
               </div>
               <div className="amount-helpers">
-                <span>SET AMOUNT</span>
+                <span>Fill amount</span>
                 <button
                   type="button"
                   onClick={() => setHelper(row.key, "exact")}
@@ -402,13 +402,12 @@ export default function LiveCaseComposer({
             </fieldset>
           ))}
           <p className="help-text">
-            Helpers fill source amounts only. Discount eligibility, fees,
-            allocations, and all accounting proofs are computed by the backend.
-            For multiple payments, select each payment’s invoices before using a
-            helper.
+            Amount shortcuts use the invoices selected above. Discounts apply
+            only when the invoice terms allow them. For multiple payments,
+            select each payment’s invoices before using a shortcut.
           </p>
           <label className="field-label">
-            03 / OPTIONAL REMITTANCE NOTE
+            Remittance note (optional)
             <textarea
               rows={3}
               value={note}
@@ -428,12 +427,10 @@ export default function LiveCaseComposer({
           </div>
         )}
         <div className="composer-submit">
-          <span>
-            Integer cents · actual search telemetry · balanced journal
-          </span>
+          <span>Review matches and the accounting proof next.</span>
           <button type="submit" className="primary-button" disabled={locked}>
             <Play size={14} />
-            {locked ? "RUNNING…" : "RUN SOLVER ON THIS LEDGER"}
+            {locked ? "RUNNING…" : "Reconcile this ledger"}
           </button>
         </div>
       </form>

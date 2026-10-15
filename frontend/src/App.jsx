@@ -24,6 +24,7 @@ import MathProofInspector from "./components/MathProofInspector";
 import LiveSimulatorDrawer from "./components/LiveSimulatorDrawer";
 import RemittanceDropzone from "./components/RemittanceDropzone";
 import LiveCaseComposer from "./components/LiveCaseComposer";
+import WelcomeWorkspace from "./components/WelcomeWorkspace";
 import {
   api,
   download,
@@ -60,6 +61,12 @@ export default function App() {
   const [workspaceMode, setWorkspaceMode] = useState("blank");
   const [workspaceRevision, setWorkspaceRevision] = useState(0);
   const custom = workspaceMode !== "sample";
+  const isEmpty =
+    !result &&
+    !data.invoices.length &&
+    !data.deposits.length &&
+    !data.remittances.length;
+  const showWelcome = isEmpty && view === "workbench";
   const [runAt, setRunAt] = useState(null);
   const [exportOpen, setExportOpen] = useState(false);
 
@@ -201,17 +208,27 @@ export default function App() {
             navigate("workbench");
           }}
         >
-          <span />
-          <span />
-          <span />
+          <span className="brand-symbol">
+            <i />
+            <i />
+            <i />
+          </span>
+          <span className="brand-name">
+            SettleSum<span>.</span>
+          </span>
         </a>
         <div className="rail-items">
           {[
-            ["workbench", ArrowLeftRight, "Reconciliation workbench"],
-            ["invoices", Database, "Open invoice ledger"],
-            ["remittances", FileText, "Remittance documents"],
-            ["journal", BookOpen, "General ledger journal"],
-          ].map(([name, Icon, label]) => (
+            [
+              "workbench",
+              ArrowLeftRight,
+              "Reconciliation workbench",
+              "Payments",
+            ],
+            ["invoices", Database, "Open invoice ledger", "Invoices"],
+            ["remittances", FileText, "Remittance documents", "Remittances"],
+            ["journal", BookOpen, "General ledger journal", "Journal"],
+          ].map(([name, Icon, label, text]) => (
             <button
               key={name}
               title={label}
@@ -220,6 +237,7 @@ export default function App() {
               onClick={() => navigate(name)}
             >
               <Icon size={19} />
+              <span>{text}</span>
             </button>
           ))}
         </div>
@@ -231,6 +249,7 @@ export default function App() {
             disabled={!data.deposits.length || !data.invoices.length}
           >
             <Settings2 size={19} />
+            <span>Payment rules</span>
           </button>
           <button
             title="About the solver"
@@ -238,138 +257,131 @@ export default function App() {
             onClick={() => setDrawer("help")}
           >
             <CircleHelp size={19} />
+            <span>How it works</span>
           </button>
-          <span className="user-avatar" title="Local controller workspace">
-            AR
-          </span>
+          <div className="session-note">
+            Session workspace<span>Your changes stay until reload.</span>
+          </div>
         </div>
       </aside>
       <div className="app-content">
         <header className="app-header">
           <div className="wordmark">
-            SettleSum<span className="brand-period">.</span>
-            <span className="header-divider" />
-            <span className="workspace-name">FINANCIAL OPERATIONS</span>
+            Cash application
+            <span className="workspace-name">Payments, explained.</span>
           </div>
           <div className="header-right">
             <span className="engine-state">
               <span className={`status-dot ${busy ? "working" : ""}`} />
               {busy
-                ? "ENGINE RUNNING"
+                ? "Reconciling…"
                 : result
-                  ? "ENGINE ONLINE"
-                  : "AWAITING INPUT"}
+                  ? "Ledger calculated"
+                  : "Ready for your data"}
             </span>
             <span className="header-divider" />
-            <span className="workspace-id">LOCAL WORKSPACE</span>
+            <span className="workspace-id">USD</span>
           </div>
         </header>
-        <main>
-          <div className="workspace-bar" aria-label="Workspace actions">
-            <div className="workspace-mode">
-              <span className="small-label">WORKSPACE</span>
-              <b>
-                {workspaceMode === "blank"
-                  ? "BLANK LEDGER"
-                  : workspaceMode === "sample"
-                    ? "SYNTHETIC BENCHMARK"
-                    : workspaceMode === "live"
-                      ? "LIVE CASE"
-                      : "CUSTOM CSV"}
-              </b>
-            </div>
-            <div className="workspace-actions">
-              <button onClick={clearLedger} disabled={busy || exporting}>
-                NEW BLANK LEDGER
-              </button>
-              <button
-                className="primary-button"
-                onClick={() => {
-                  setError("");
-                  setDrawer("composer");
-                }}
-                disabled={busy || exporting}
-              >
-                <Plus size={14} />
-                BUILD LIVE TEST CASE
-              </button>
-              <button onClick={loadSample} disabled={busy || exporting}>
-                <Database size={14} />
-                LOAD 36-ROW SAMPLE CSV
-              </button>
-            </div>
-          </div>
-          <div className="page-heading">
-            <div className="heading-copy">
-              <div className="breadcrumb">
-                Cash application <span>/</span>{" "}
-                {view === "workbench"
-                  ? "Reconciliation"
-                  : view === "invoices"
-                    ? "Open invoices"
-                    : view === "remittances"
-                      ? "Remittance documents"
-                      : "General ledger"}
+        <main className={showWelcome ? "welcome-main" : "ledger-main"}>
+          {!showWelcome && (
+            <>
+              <div className="workspace-bar" aria-label="Workspace actions">
+                <div className="workspace-mode">
+                  <span className="small-label">WORKSPACE</span>
+                  <b>
+                    {workspaceMode === "blank"
+                      ? "Blank ledger"
+                      : workspaceMode === "sample"
+                        ? "Sample ledger"
+                        : workspaceMode === "live"
+                          ? "Live case"
+                          : "Imported ledger"}
+                  </b>
+                </div>
+                <div className="workspace-actions">
+                  <button onClick={clearLedger} disabled={busy || exporting}>
+                    New blank ledger
+                  </button>
+                  <button
+                    onClick={() => {
+                      setError("");
+                      setDrawer("composer");
+                    }}
+                    disabled={busy || exporting}
+                  >
+                    <Plus size={14} />
+                    Build a live case
+                  </button>
+                  <button onClick={loadSample} disabled={busy || exporting}>
+                    <Database size={14} />
+                    Load sample ledger
+                  </button>
+                </div>
               </div>
-              <h1>
-                {view === "workbench"
-                  ? "Reconciliation workbench"
-                  : view === "invoices"
-                    ? "Open invoice ledger"
-                    : view === "remittances"
-                      ? "Remittance documents"
-                      : "General ledger journal"}
-              </h1>
-              <p>
-                {view === "workbench"
-                  ? "Lump-sum payments. Conditional invoice states. Every cent accounted for."
-                  : view === "invoices"
-                    ? "Edit source values and dates, then re-solve the complete bank ledger."
-                    : view === "remittances"
-                      ? "Documented invoice references and claims, linked to source evidence."
-                      : "Balanced journal entries generated from computed invoice-state matches."}
-              </p>
-            </div>
-            <div className="heading-actions">
-              <button onClick={() => setDrawer("upload")} disabled={busy}>
-                <Upload size={14} /> Import data
-              </button>
-              <div className="export-control">
-                <button
-                  disabled={!result || busy || exporting || dirty}
-                  className="primary-button"
-                  onClick={() => setExportOpen(!exportOpen)}
-                  aria-expanded={exportOpen}
-                >
-                  <ArrowDownToLine size={14} />
-                  {exporting ? "Exporting…" : "Export journal"}
-                  <ChevronDown size={12} />
-                </button>
-                {exportOpen && (
-                  <>
-                    <div
-                      className="menu-dismiss"
-                      onClick={() => setExportOpen(false)}
-                    />
-                    <div className="export-menu">
-                      <button onClick={() => exportFile("quickbooks")}>
-                        QuickBooks journal CSV
-                      </button>
-                      <button onClick={() => exportFile("xero")}>
-                        Xero journal CSV
-                      </button>
-                      <button onClick={() => exportFile("audit")}>
-                        Reconciliation audit JSON
-                      </button>
-                      <button onClick={() => exportFile("chargebacks")}>
-                        Chargeback debit memos
-                      </button>
-                    </div>
-                  </>
-                )}
+              <div className="page-heading">
+                <div className="heading-copy">
+                  <h1>
+                    {view === "workbench"
+                      ? "Payment reconciliation"
+                      : view === "invoices"
+                        ? "Open invoice ledger"
+                        : view === "remittances"
+                          ? "Remittance documents"
+                          : "General ledger journal"}
+                  </h1>
+                  <p>
+                    {view === "workbench"
+                      ? "Choose a payment to see its invoices, deductions, and accounting proof."
+                      : view === "invoices"
+                        ? "Edit source values and dates, then re-solve the complete bank ledger."
+                        : view === "remittances"
+                          ? "Documented invoice references and claims, linked to source evidence."
+                          : "Balanced journal entries generated from computed invoice-state matches."}
+                  </p>
+                </div>
+                <div className="heading-actions">
+                  <button onClick={() => setDrawer("upload")} disabled={busy}>
+                    <Upload size={14} /> Import data
+                  </button>
+                  <div className="export-control">
+                    <button
+                      disabled={!result || busy || exporting || dirty}
+                      className="primary-button"
+                      onClick={() => setExportOpen(!exportOpen)}
+                      aria-expanded={exportOpen}
+                    >
+                      <ArrowDownToLine size={14} />
+                      {exporting ? "Exporting…" : "Export journal"}
+                      <ChevronDown size={12} />
+                    </button>
+                    {exportOpen && (
+                      <>
+                        <div
+                          className="menu-dismiss"
+                          onClick={() => setExportOpen(false)}
+                        />
+                        <div className="export-menu">
+                          <button onClick={() => exportFile("quickbooks")}>
+                            QuickBooks journal CSV
+                          </button>
+                          <button onClick={() => exportFile("xero")}>
+                            Xero journal CSV
+                          </button>
+                          <button onClick={() => exportFile("audit")}>
+                            Reconciliation audit JSON
+                          </button>
+                          <button onClick={() => exportFile("chargebacks")}>
+                            Chargeback debit memos
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
           {error && (
             <div className="error-banner" role="alert">
               <TriangleAlert size={16} />
@@ -391,336 +403,360 @@ export default function App() {
               </button>
             </div>
           )}
-          <LedgerHeader result={result} busy={busy} dirty={dirty} />
-          <div className={`dataset-banner ${custom ? "custom-dataset" : ""}`}>
-            <span>
-              <FlaskConical size={14} />
-              {workspaceMode === "sample"
-                ? "SYNTHETIC BENCHMARK DATASET — MODELED ON B2B WHOLESALE AR LEDGERS. UPLOAD ANY CUSTOM CSV TO RUN LIVE."
-                : workspaceMode === "blank"
-                  ? "EMPTY WORKSPACE — BUILD A LIVE CASE OR IMPORT YOUR OWN CSV FILES TO BEGIN."
-                  : "CUSTOM SESSION DATASET — ALL MATCHES COMPUTED FROM YOUR CURRENT INPUTS."}
-            </span>
-          </div>
-          <div className="workbench-toolbar">
-            <div>
-              <span className="status-dot" />
-              <b>
-                {busy
-                  ? "Reconciliation running"
-                  : dirty
-                    ? "Input changes pending"
-                    : "Current ledger"}
-              </b>
-              <span className="mono muted">
-                {`${number(data.invoices.length)} INVOICES / ${number(data.deposits.length)} DEPOSITS / ${new Set(data.invoices.map((x) => x.customer_id)).size} COUNTERPARTIES`}
-              </span>
-            </div>
-            <button
-              className="simulator-button"
-              onClick={() => setDrawer("simulator")}
-              disabled={!data.deposits.length || !data.invoices.length || busy}
-            >
-              <SlidersHorizontal size={13} /> Live input simulator{" "}
-              <span className="mono">WHAT-IF</span>
-            </button>
-          </div>
-          {dirty && (
-            <div className="pending-banner">
-              <span>
-                Source inputs have changed. Displayed proofs and metrics belong
-                to the previous run.
-              </span>
-              <button
-                className="primary-button"
-                disabled={busy}
-                onClick={() => solve(data, config)}
+          {showWelcome ? (
+            <WelcomeWorkspace
+              onBuild={() => {
+                setError("");
+                setDrawer("composer");
+              }}
+              onImport={() => setDrawer("upload")}
+              onSample={loadSample}
+              busy={busy}
+            />
+          ) : (
+            <>
+              <LedgerHeader result={result} busy={busy} dirty={dirty} />
+              <div
+                className={`dataset-banner ${custom ? "custom-dataset" : ""}`}
               >
-                <Play size={13} />
-                {busy ? "SOLVING…" : "RE-SOLVE LEDGER"}
-              </button>
-            </div>
-          )}
-          {view === "workbench" ? (
-            <div
-              className={`workbench ${busy ? "is-solving" : ""}`}
-              aria-busy={busy}
-            >
-              <ReconciliationGrid
-                key={workspaceRevision}
-                sourceDeposits={data.deposits}
-                onBuild={() => setDrawer("composer")}
-                onImport={() => setDrawer("upload")}
-                result={result}
-                selectedId={selectedId}
-                onSelect={setSelectedId}
-                filter={filter}
-                setFilter={setFilter}
-              />
-              <MathProofInspector
-                match={selected}
-                onSimulate={() => setDrawer("simulator")}
-                onMemo={() => exportFile("chargebacks", selected?.deposit_id)}
-                busy={exporting || busy || dirty}
-                remittances={data.remittances}
-              />
-            </div>
-          ) : view === "invoices" ? (
-            <section className="data-panel">
-              <div className="panel-heading">
-                <h2>
-                  Open invoices{" "}
-                  <span className="count">{data.invoices.length}</span>
-                </h2>
+                <span>
+                  {workspaceMode === "sample" ? (
+                    <FlaskConical size={16} />
+                  ) : (
+                    <Check size={16} />
+                  )}
+                  {workspaceMode === "sample"
+                    ? "SYNTHETIC BENCHMARK DATASET — MODELED ON B2B WHOLESALE AR LEDGERS. UPLOAD ANY CUSTOM CSV TO RUN LIVE."
+                    : workspaceMode === "blank"
+                      ? "Add invoices and payments to get started."
+                      : "Live ledger. Every result is calculated from your current inputs."}
+                </span>
+              </div>
+              <div className="workbench-toolbar">
+                <div>
+                  <span className="status-dot" />
+                  <b>
+                    {busy
+                      ? "Reconciliation running"
+                      : dirty
+                        ? "Input changes pending"
+                        : "Current ledger"}
+                  </b>
+                  <span className="mono muted">
+                    {`${number(data.invoices.length)} INVOICES / ${number(data.deposits.length)} DEPOSITS / ${new Set(data.invoices.map((x) => x.customer_id)).size} COUNTERPARTIES`}
+                  </span>
+                </div>
                 <button
-                  disabled={!dirty || busy || !data.deposits.length}
-                  className="primary-button"
-                  onClick={() => solve(data, config)}
+                  className="simulator-button"
+                  onClick={() => setDrawer("simulator")}
+                  disabled={
+                    !data.deposits.length || !data.invoices.length || busy
+                  }
                 >
-                  <Play size={13} /> RE-SOLVE LEDGER
+                  <SlidersHorizontal size={16} /> Try a change
                 </button>
               </div>
-              <div className="table-scroll">
-                <table className="source-table">
-                  <thead>
-                    <tr>
-                      <th>INVOICE ID</th>
-                      <th>CUSTOMER</th>
-                      <th>ISSUED</th>
-                      <th>DUE DATE</th>
-                      <th>AMOUNT · USD</th>
-                      <th>DISCOUNT RATE</th>
-                      <th>WINDOW · DAYS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.invoices.map((i) => (
-                      <tr key={i.invoice_id}>
-                        <td className="mono">{i.invoice_id}</td>
-                        <td>{i.customer_name}</td>
-                        <td>
-                          <input
-                            aria-label={`${i.invoice_id} invoice date`}
-                            type="date"
-                            value={i.invoice_date}
-                            onChange={(e) =>
-                              updateInvoice(
-                                i.invoice_id,
-                                "invoice_date",
-                                e.target.value,
-                              )
-                            }
-                          />
-                        </td>
-                        <td>
-                          <input
-                            aria-label={`${i.invoice_id} due date`}
-                            type="date"
-                            value={i.due_date}
-                            onChange={(e) =>
-                              updateInvoice(
-                                i.invoice_id,
-                                "due_date",
-                                e.target.value,
-                              )
-                            }
-                          />
-                        </td>
-                        <td>
-                          <input
-                            aria-label={`${i.invoice_id} amount`}
-                            type="number"
-                            step=".01"
-                            min=".01"
-                            value={
-                              Number.isFinite(i.amount_cents)
-                                ? centsToDollars(i.amount_cents)
-                                : ""
-                            }
-                            onChange={(e) =>
-                              updateInvoice(
-                                i.invoice_id,
-                                "amount_cents",
-                                dollarsToCents(e.target.value),
-                              )
-                            }
-                          />
-                        </td>
-                        <td>
-                          <input
-                            aria-label={`${i.invoice_id} discount rate`}
-                            type="number"
-                            step=".001"
-                            min="0"
-                            max=".99"
-                            value={i.discount_pct}
-                            onChange={(e) =>
-                              updateInvoice(
-                                i.invoice_id,
-                                "discount_pct",
-                                e.target.value,
-                              )
-                            }
-                          />
-                        </td>
-                        <td>
-                          <input
-                            aria-label={`${i.invoice_id} discount days`}
-                            type="number"
-                            min="0"
-                            max="365"
-                            value={i.discount_days}
-                            onChange={(e) =>
-                              updateInvoice(
-                                i.invoice_id,
-                                "discount_days",
-                                Number(e.target.value),
-                              )
-                            }
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          ) : view === "remittances" ? (
-            <section className="data-panel">
-              <div className="panel-heading">
-                <h2>
-                  Source documents{" "}
-                  <span className="count">{data.remittances.length}</span>
-                </h2>
-                <button onClick={() => setDrawer("upload")}>
-                  <Upload size={13} /> Add remittance
-                </button>
-              </div>
-              {data.remittances.map((r, i) => (
-                <article
-                  className="document-record"
-                  key={`${r.document_id}-${i}`}
-                >
-                  <h3>
-                    <FileText size={16} />
-                    <span className="mono">{r.document_id}</span>
-                    <span className="badge blue">
-                      {r.deposit_id || "INVOICE-LINKED"}
-                    </span>
-                  </h3>
-                  <p>{r.customer_name}</p>
-                  <pre>{r.raw_text}</pre>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>EXPLICIT INVOICE REFERENCE</th>
-                        <th className="numeric">CLAIM</th>
-                        <th>REASON</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {r.referenced_invoices.map((ref, j) => (
-                        <tr key={j}>
-                          <td className="mono">{ref.invoice_id}</td>
-                          <td className="numeric mono amber">
-                            {money(ref.deduction_cents)}
-                          </td>
-                          <td>{ref.reason_code}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </article>
-              ))}
-              {!data.remittances.length && (
-                <div className="empty-state">
-                  <FileText size={26} />
-                  <h3>No remittance documents</h3>
-                  <p>
-                    Import a text-based PDF or paste an advice note to add
-                    documented claim states.
-                  </p>
-                  <button onClick={() => setDrawer("upload")}>
-                    Import remittance
+              {dirty && (
+                <div className="pending-banner">
+                  <span>
+                    Source inputs have changed. Displayed proofs and metrics
+                    belong to the previous run.
+                  </span>
+                  <button
+                    className="primary-button"
+                    disabled={busy}
+                    onClick={() => solve(data, config)}
+                  >
+                    <Play size={13} />
+                    {busy ? "SOLVING…" : "RE-SOLVE LEDGER"}
                   </button>
                 </div>
               )}
-            </section>
-          ) : (
-            <section className="data-panel">
-              <div className="panel-heading">
-                <h2>
-                  Computed journal{" "}
-                  <span className={`badge ${result ? "green" : "muted"}`}>
-                    {result ? "BALANCED" : "AWAITING LEDGER"}
-                  </span>
-                </h2>
-                <span className="small-label">DRAFT · NOT POSTED</span>
-              </div>
-              <div className="table-scroll">
-                <table className="source-table">
-                  <thead>
-                    <tr>
-                      <th>DEPOSIT</th>
-                      <th>DATE</th>
-                      <th>GL</th>
-                      <th>ACCOUNT</th>
-                      <th>INVOICE REFERENCE</th>
-                      <th className="numeric">DEBIT</th>
-                      <th className="numeric">CREDIT</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {result?.matches.flatMap((m) =>
-                      m.journal_lines.map((line, i) => (
-                        <tr key={`${m.deposit_id}-${i}`}>
-                          <td>
-                            <button
-                              className="text-button mono"
-                              onClick={() => {
-                                setSelectedId(m.deposit_id);
-                                setView("workbench");
-                              }}
-                            >
-                              {m.deposit_id}
-                            </button>
-                          </td>
-                          <td className="mono">{m.deposit_date}</td>
-                          <td
-                            className={`mono ${line.gl_account === "1215" ? "amber" : ""}`}
-                          >
-                            {line.gl_account}
-                          </td>
-                          <td>{line.account_name}</td>
-                          <td className="mono muted">
-                            {line.invoice_id || "—"}
-                          </td>
-                          <td className="numeric mono">
-                            {line.debit_cents ? money(line.debit_cents) : "—"}
-                          </td>
-                          <td className="numeric mono">
-                            {line.credit_cents ? money(line.credit_cents) : "—"}
-                          </td>
+              {view === "workbench" ? (
+                <div
+                  className={`workbench ${busy ? "is-solving" : ""}`}
+                  aria-busy={busy}
+                >
+                  <ReconciliationGrid
+                    key={workspaceRevision}
+                    sourceDeposits={data.deposits}
+                    onBuild={() => setDrawer("composer")}
+                    onImport={() => setDrawer("upload")}
+                    result={result}
+                    selectedId={selectedId}
+                    onSelect={setSelectedId}
+                    filter={filter}
+                    setFilter={setFilter}
+                  />
+                  <MathProofInspector
+                    match={selected}
+                    onSimulate={() => setDrawer("simulator")}
+                    onMemo={() =>
+                      exportFile("chargebacks", selected?.deposit_id)
+                    }
+                    busy={exporting || busy || dirty}
+                    remittances={data.remittances}
+                  />
+                </div>
+              ) : view === "invoices" ? (
+                <section className="data-panel">
+                  <div className="panel-heading">
+                    <h2>
+                      Open invoices{" "}
+                      <span className="count">{data.invoices.length}</span>
+                    </h2>
+                    <button
+                      disabled={!dirty || busy || !data.deposits.length}
+                      className="primary-button"
+                      onClick={() => solve(data, config)}
+                    >
+                      <Play size={13} /> RE-SOLVE LEDGER
+                    </button>
+                  </div>
+                  <div className="table-scroll">
+                    <table className="source-table">
+                      <thead>
+                        <tr>
+                          <th>INVOICE ID</th>
+                          <th>CUSTOMER</th>
+                          <th>ISSUED</th>
+                          <th>DUE DATE</th>
+                          <th>AMOUNT · USD</th>
+                          <th>DISCOUNT RATE</th>
+                          <th>WINDOW · DAYS</th>
                         </tr>
-                      )),
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </section>
+                      </thead>
+                      <tbody>
+                        {data.invoices.map((i) => (
+                          <tr key={i.invoice_id}>
+                            <td className="mono">{i.invoice_id}</td>
+                            <td>{i.customer_name}</td>
+                            <td>
+                              <input
+                                aria-label={`${i.invoice_id} invoice date`}
+                                type="date"
+                                value={i.invoice_date}
+                                onChange={(e) =>
+                                  updateInvoice(
+                                    i.invoice_id,
+                                    "invoice_date",
+                                    e.target.value,
+                                  )
+                                }
+                              />
+                            </td>
+                            <td>
+                              <input
+                                aria-label={`${i.invoice_id} due date`}
+                                type="date"
+                                value={i.due_date}
+                                onChange={(e) =>
+                                  updateInvoice(
+                                    i.invoice_id,
+                                    "due_date",
+                                    e.target.value,
+                                  )
+                                }
+                              />
+                            </td>
+                            <td>
+                              <input
+                                aria-label={`${i.invoice_id} amount`}
+                                type="number"
+                                step=".01"
+                                min=".01"
+                                value={
+                                  Number.isFinite(i.amount_cents)
+                                    ? centsToDollars(i.amount_cents)
+                                    : ""
+                                }
+                                onChange={(e) =>
+                                  updateInvoice(
+                                    i.invoice_id,
+                                    "amount_cents",
+                                    dollarsToCents(e.target.value),
+                                  )
+                                }
+                              />
+                            </td>
+                            <td>
+                              <input
+                                aria-label={`${i.invoice_id} discount rate`}
+                                type="number"
+                                step=".001"
+                                min="0"
+                                max=".99"
+                                value={i.discount_pct}
+                                onChange={(e) =>
+                                  updateInvoice(
+                                    i.invoice_id,
+                                    "discount_pct",
+                                    e.target.value,
+                                  )
+                                }
+                              />
+                            </td>
+                            <td>
+                              <input
+                                aria-label={`${i.invoice_id} discount days`}
+                                type="number"
+                                min="0"
+                                max="365"
+                                value={i.discount_days}
+                                onChange={(e) =>
+                                  updateInvoice(
+                                    i.invoice_id,
+                                    "discount_days",
+                                    Number(e.target.value),
+                                  )
+                                }
+                              />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              ) : view === "remittances" ? (
+                <section className="data-panel">
+                  <div className="panel-heading">
+                    <h2>
+                      Source documents{" "}
+                      <span className="count">{data.remittances.length}</span>
+                    </h2>
+                    <button onClick={() => setDrawer("upload")}>
+                      <Upload size={13} /> Add remittance
+                    </button>
+                  </div>
+                  {data.remittances.map((r, i) => (
+                    <article
+                      className="document-record"
+                      key={`${r.document_id}-${i}`}
+                    >
+                      <h3>
+                        <FileText size={16} />
+                        <span className="mono">{r.document_id}</span>
+                        <span className="badge blue">
+                          {r.deposit_id || "INVOICE-LINKED"}
+                        </span>
+                      </h3>
+                      <p>{r.customer_name}</p>
+                      <pre>{r.raw_text}</pre>
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>EXPLICIT INVOICE REFERENCE</th>
+                            <th className="numeric">CLAIM</th>
+                            <th>REASON</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {r.referenced_invoices.map((ref, j) => (
+                            <tr key={j}>
+                              <td className="mono">{ref.invoice_id}</td>
+                              <td className="numeric mono amber">
+                                {money(ref.deduction_cents)}
+                              </td>
+                              <td>{ref.reason_code}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </article>
+                  ))}
+                  {!data.remittances.length && (
+                    <div className="empty-state">
+                      <FileText size={26} />
+                      <h3>No remittance documents</h3>
+                      <p>
+                        Import a text-based PDF or paste an advice note to add
+                        documented claim states.
+                      </p>
+                      <button onClick={() => setDrawer("upload")}>
+                        Import remittance
+                      </button>
+                    </div>
+                  )}
+                </section>
+              ) : (
+                <section className="data-panel">
+                  <div className="panel-heading">
+                    <h2>
+                      Computed journal{" "}
+                      <span className={`badge ${result ? "green" : "muted"}`}>
+                        {result ? "BALANCED" : "AWAITING LEDGER"}
+                      </span>
+                    </h2>
+                    <span className="small-label">DRAFT · NOT POSTED</span>
+                  </div>
+                  <div className="table-scroll">
+                    <table className="source-table">
+                      <thead>
+                        <tr>
+                          <th>DEPOSIT</th>
+                          <th>DATE</th>
+                          <th>GL</th>
+                          <th>ACCOUNT</th>
+                          <th>INVOICE REFERENCE</th>
+                          <th className="numeric">DEBIT</th>
+                          <th className="numeric">CREDIT</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {result?.matches.flatMap((m) =>
+                          m.journal_lines.map((line, i) => (
+                            <tr key={`${m.deposit_id}-${i}`}>
+                              <td>
+                                <button
+                                  className="text-button mono"
+                                  onClick={() => {
+                                    setSelectedId(m.deposit_id);
+                                    setView("workbench");
+                                  }}
+                                >
+                                  {m.deposit_id}
+                                </button>
+                              </td>
+                              <td className="mono">{m.deposit_date}</td>
+                              <td
+                                className={`mono ${line.gl_account === "1215" ? "amber" : ""}`}
+                              >
+                                {line.gl_account}
+                              </td>
+                              <td>{line.account_name}</td>
+                              <td className="mono muted">
+                                {line.invoice_id || "—"}
+                              </td>
+                              <td className="numeric mono">
+                                {line.debit_cents
+                                  ? money(line.debit_cents)
+                                  : "—"}
+                              </td>
+                              <td className="numeric mono">
+                                {line.credit_cents
+                                  ? money(line.credit_cents)
+                                  : "—"}
+                              </td>
+                            </tr>
+                          )),
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              )}
+            </>
           )}
         </main>
         <footer className="app-footer">
           <span>
-            <span className="status-dot" /> SETTLESUM ENGINE <b>v1.0</b>
-            <span className="footer-divider">/</span> MULTI-STATE
-            BRANCH-AND-BOUND
+            Draft journals only. Nothing is posted to your accounting system.
           </span>
           <span>
             {runAt
-              ? `LAST RUN ${runAt.toLocaleTimeString("en-GB", { timeZone: "UTC" })} UTC`
-              : "AWAITING FIRST RUN"}
-            <span className="footer-divider">/</span> INTEGER CENT PRECISION
+              ? `Last calculated ${runAt.toLocaleTimeString("en-GB", { timeZone: "UTC" })} UTC`
+              : "Your ledger starts empty."}
           </span>
         </footer>
       </div>
@@ -776,7 +812,7 @@ export default function App() {
               setView("workbench");
               setFilter("all");
               setNotice(
-                "Live case reconciled from your source records. Inspect the equation and journal below.",
+                "Your ledger is ready. Select a payment to review the calculation.",
               );
             }
             return ok;

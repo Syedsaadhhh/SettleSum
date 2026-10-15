@@ -4,6 +4,7 @@ Uses actual browser requests and downloaded files. Run against a built, running 
 """
 
 import argparse
+import re
 import csv
 import io
 import json
@@ -28,9 +29,10 @@ with sync_playwright() as p:
     page.on("pageerror", lambda error: errors.append(str(error)))
     page.on("request", lambda request: requests.append(request.url))
     page.goto(options.url)
-    expect(page.locator(".workspace-mode b")).to_have_text("BLANK LEDGER")
-    expect(page.locator(".metric strong").nth(1)).to_have_text("$0.00")
-    expect(page.locator(".metric strong").nth(3)).to_have_text("0")
+    expect(
+        page.get_by_role("heading", name=re.compile("Match payments"))
+    ).to_be_visible()
+    expect(page.locator(".metric")).to_have_count(0)
     assert not any(
         "/api/sample-data" in url or "/api/reconcile" in url for url in requests
     )
@@ -47,7 +49,7 @@ with sync_playwright() as p:
         date="2026-10-10",
         mode="fresh",
     ):
-        page.get_by_role("button", name="BUILD LIVE TEST CASE", exact=True).click()
+        page.get_by_role("button", name="Build a live case", exact=True).click()
         dialog = page.get_by_role("dialog")
         dialog.get_by_label("Workspace action").select_option(mode)
         dialog.get_by_label("Customer name", exact=True).fill(name)
@@ -78,9 +80,7 @@ with sync_playwright() as p:
             lambda response: "/api/reconcile" in response.url
             and response.request.method == "POST"
         ) as received:
-            page.get_by_role(
-                "button", name="RUN SOLVER ON THIS LEDGER", exact=True
-            ).click()
+            page.get_by_role("button", name="Reconcile this ledger", exact=True).click()
         response = received.value
         assert response.status == 200, response.text()
         document = response.json()
@@ -96,12 +96,12 @@ with sync_playwright() as p:
                 line["credit_cents"] for line in match["journal_lines"]
             )
         assert document["nodes_explored"] > 0
+        page.get_by_text("Solver details", exact=True).click()
         expect(page.locator(".metric strong").nth(3)).to_have_text(
             f'{document["nodes_explored"]:,}'
         )
-        expect(page.locator(".ledger-proof-strip")).to_contain_text(
-            "DOUBLE-ENTRY VERIFIED"
-        )
+        page.get_by_text("Solver details", exact=True).click()
+        expect(page.locator(".ledger-proof-strip")).to_contain_text("Journal balanced")
 
     dialog = open_case(
         "Horizon Hardware Co", ["BILL-H701", "BILL-H702"], ["4200", "3800"], "PAY-H701"
@@ -144,7 +144,8 @@ with sync_playwright() as p:
         "Computed custom-ledger journal downloads with actual invoice references"
     )
 
-    page.get_by_role("button", name="Import data", exact=True).click()
+    page.get_by_role("button", name=re.compile(r"^Import (data|CSV files)$")).click()
+    page.get_by_text("CSV templates & downloads", exact=True).click()
     for kind in ("Invoice", "Deposit"):
         with page.expect_download() as received:
             page.get_by_role(
@@ -164,9 +165,9 @@ with sync_playwright() as p:
         page.get_by_role("button", name="Download invoice CSV only", exact=True).click()
     assert Path(received.value.path()).read_bytes() == invoice_csv
     page.get_by_role("button", name="Close drawer", exact=True).click()
-    page.get_by_role("button", name="NEW BLANK LEDGER", exact=True).click()
-    expect(page.locator(".metric strong").nth(1)).to_have_text("$0.00")
-    expect(page.locator(".ledger-proof-strip")).to_contain_text("AWAITING LEDGER PROOF")
+    page.get_by_role("button", name="New blank ledger", exact=True).click()
+    expect(page.locator(".welcome-workspace")).to_be_visible()
+    expect(page.locator(".metric")).to_have_count(0)
     assert page.locator(".deposit-row").count() == 0
     checks.append(
         "Blank templates, lossless source CSV archive, individual CSV download, complete workspace reset"
@@ -175,7 +176,9 @@ with sync_playwright() as p:
     # Deposit-first imports stage real source rows; no invalid empty reconcile request.
     before = sum("/api/reconcile" in url for url in requests)
     for kind, content in [("deposits", deposit_csv), ("invoices", invoice_csv)]:
-        page.get_by_role("button", name="Import data", exact=True).click()
+        page.get_by_role(
+            "button", name=re.compile(r"^Import (data|CSV files)$")
+        ).click()
         page.get_by_label("Dataset to replace").select_option(kind)
         page.get_by_label("Upload file").set_input_files(
             {"name": f"{kind}.csv", "mimeType": "text/csv", "buffer": content}
@@ -219,7 +222,7 @@ with sync_playwright() as p:
     assert len(payload["invoices"]) == 4 and len(payload["deposits"]) == 3
     match = next(m for m in document["matches"] if m["deposit_id"] == "PAY-OF-9")
     assert match["invoices"][0]["state"] == "EARNED_DISCOUNT"
-    page.get_by_role("button", name="Live input simulator WHAT-IF").click()
+    page.get_by_role("button", name="Try a change").click()
     page.get_by_role("combobox").select_option("PAY-OF-9")
     page.get_by_label("Clearing date").fill("2026-10-22")
     with page.expect_response(
@@ -243,7 +246,7 @@ with sync_playwright() as p:
         "PAY-CLAIM-7",
     )
     dialog.get_by_label("Deposit amount ($)", exact=True).fill("7750.00")
-    dialog.get_by_label("03 / OPTIONAL REMITTANCE NOTE", exact=True).fill(
+    dialog.get_by_label("Remittance note (optional)", exact=True).fill(
         "Applying $250.00 deduction on bill.claim-7 for cracked actuator housing"
     )
     with page.expect_response(
@@ -268,12 +271,14 @@ with sync_playwright() as p:
         "Fresh replaces sources; optional text note with arbitrary invoice ID parses offline and produces GL 1220"
     )
 
-    page.get_by_role("button", name="NEW BLANK LEDGER", exact=True).click()
+    page.get_by_role("button", name="New blank ledger", exact=True).click()
     page.get_by_role("button", name="Remittance documents", exact=True).click()
     assert page.locator(".remittance-card").count() == 0
     before = sum("/api/reconcile" in url for url in requests)
     for kind, content in [("invoices", invoice_csv), ("deposits", deposit_csv)]:
-        page.get_by_role("button", name="Import data", exact=True).click()
+        page.get_by_role(
+            "button", name=re.compile(r"^Import (data|CSV files)$")
+        ).click()
         page.get_by_label("Dataset to replace").select_option(kind)
         page.get_by_label("Upload file").set_input_files(
             {"name": f"{kind}.csv", "mimeType": "text/csv", "buffer": content}
@@ -296,18 +301,20 @@ with sync_playwright() as p:
     checks.append(
         "Invoice-first staging displays real source rows and reconciles after deposit import"
     )
-    page.get_by_role("button", name="LOAD 36-ROW SAMPLE CSV", exact=True).click()
+    page.get_by_role("button", name="Load sample ledger", exact=True).click()
     expect(page.locator(".metric strong").first).to_have_text("87.5%")
     expect(page.locator(".workbench-toolbar")).to_contain_text("36 INVOICES")
     checks.append(
         "Reset clears remittances; benchmark is available only by explicit load"
     )
     page.reload()
-    expect(page.locator(".workspace-mode b")).to_have_text("BLANK LEDGER")
+    expect(
+        page.get_by_role("heading", name=re.compile("Match payments"))
+    ).to_be_visible()
     for width in (1280, 1024, 800, 390):
         page.set_viewport_size({"width": width, "height": 900})
         assert not page.evaluate("document.documentElement.scrollWidth > innerWidth")
-        page.get_by_role("button", name="BUILD LIVE TEST CASE", exact=True).click()
+        page.get_by_role("button", name="Build a live case", exact=True).click()
         assert not page.get_by_role("dialog").evaluate(
             "el => el.scrollWidth > el.clientWidth"
         )
