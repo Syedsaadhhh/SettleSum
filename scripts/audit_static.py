@@ -16,7 +16,7 @@ DELAY = re.compile(r"\b(?:time\.sleep|asyncio\.sleep|setTimeout|setInterval)\s*\
 def audit():
     files = sorted(
         p
-        for folder in ("backend", "frontend")
+        for folder in ("api", "backend", "frontend")
         for p in (ROOT / folder).rglob("*")
         if p.is_file()
         and p.suffix in {".py", ".js", ".jsx", ".mjs", ".css", ".html", ".svg"}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   ArrowDownToLine,
   ArrowLeftRight,
@@ -10,7 +10,7 @@ import {
   FileText,
   FlaskConical,
   Play,
-  RotateCcw,
+  Plus,
   Settings2,
   SlidersHorizontal,
   Upload,
@@ -23,6 +23,7 @@ import ReconciliationGrid from "./components/ReconciliationGrid";
 import MathProofInspector from "./components/MathProofInspector";
 import LiveSimulatorDrawer from "./components/LiveSimulatorDrawer";
 import RemittanceDropzone from "./components/RemittanceDropzone";
+import LiveCaseComposer from "./components/LiveCaseComposer";
 import {
   api,
   download,
@@ -51,15 +52,17 @@ export default function App() {
   const [filter, setFilter] = useState("all");
   const [view, setView] = useState("workbench");
   const [drawer, setDrawer] = useState(null);
-  const [busy, setBusy] = useState(true);
+  const [busy, setBusy] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [dirty, setDirty] = useState(false);
-  const [custom, setCustom] = useState(false);
+  const [workspaceMode, setWorkspaceMode] = useState("blank");
+  const [workspaceRevision, setWorkspaceRevision] = useState(0);
+  const custom = workspaceMode !== "sample";
   const [runAt, setRunAt] = useState(null);
   const [exportOpen, setExportOpen] = useState(false);
-  const loading = useRef(false);
+
   const closeDrawer = useCallback(() => setDrawer(null), []);
   const solve = useCallback(async (nextData, nextConfig) => {
     setBusy(true);
@@ -105,7 +108,8 @@ export default function App() {
         remittances: sample.remittances,
       };
       if (await solve(next, initialConfig)) {
-        setCustom(false);
+        setWorkspaceMode("sample");
+        setWorkspaceRevision((n) => n + 1);
         setFilter("all");
         setView("workbench");
       }
@@ -114,12 +118,36 @@ export default function App() {
       setBusy(false);
     }
   }, [solve]);
-  useEffect(() => {
-    if (!loading.current) {
-      loading.current = true;
-      loadSample();
+  function clearLedger() {
+    setData(emptyData);
+    setResult(null);
+    setConfig(initialConfig);
+    setSelectedId(null);
+    setFilter("all");
+    setView("workbench");
+    setDrawer(null);
+    setError("");
+    setNotice("");
+    setDirty(false);
+    setRunAt(null);
+    setExportOpen(false);
+    setWorkspaceMode("blank");
+    setWorkspaceRevision((n) => n + 1);
+  }
+  async function applySources(next) {
+    // A source-only workspace is staged until both sides are available.
+    // The reconciliation API retains its nonempty-input validation contract.
+    if (!next.invoices.length || !next.deposits.length) {
+      setData(next);
+      setResult(null);
+      setSelectedId(null);
+      setRunAt(null);
+      setDirty(false);
+      setError("");
+      return true;
     }
-  }, [loadSample]);
+    return solve(next, config);
+  }
   const selected = result?.matches.find((x) => x.deposit_id === selectedId);
   async function exportFile(type, depositId) {
     setExportOpen(false);
@@ -155,7 +183,7 @@ export default function App() {
         i.invoice_id === id ? { ...i, [key]: value } : i,
       ),
     }));
-    setDirty(true);
+    setDirty(data.deposits.length > 0);
   };
   const navigate = (next) => {
     setView(next);
@@ -200,7 +228,7 @@ export default function App() {
             title="Solver settings"
             aria-label="Solver settings"
             onClick={() => setDrawer("simulator")}
-            disabled={!data.deposits.length}
+            disabled={!data.deposits.length || !data.invoices.length}
           >
             <Settings2 size={19} />
           </button>
@@ -230,13 +258,47 @@ export default function App() {
                 ? "ENGINE RUNNING"
                 : result
                   ? "ENGINE ONLINE"
-                  : "API DISCONNECTED"}
+                  : "AWAITING INPUT"}
             </span>
             <span className="header-divider" />
             <span className="workspace-id">LOCAL WORKSPACE</span>
           </div>
         </header>
         <main>
+          <div className="workspace-bar" aria-label="Workspace actions">
+            <div className="workspace-mode">
+              <span className="small-label">WORKSPACE</span>
+              <b>
+                {workspaceMode === "blank"
+                  ? "BLANK LEDGER"
+                  : workspaceMode === "sample"
+                    ? "SYNTHETIC BENCHMARK"
+                    : workspaceMode === "live"
+                      ? "LIVE CASE"
+                      : "CUSTOM CSV"}
+              </b>
+            </div>
+            <div className="workspace-actions">
+              <button onClick={clearLedger} disabled={busy || exporting}>
+                NEW BLANK LEDGER
+              </button>
+              <button
+                className="primary-button"
+                onClick={() => {
+                  setError("");
+                  setDrawer("composer");
+                }}
+                disabled={busy || exporting}
+              >
+                <Plus size={14} />
+                BUILD LIVE TEST CASE
+              </button>
+              <button onClick={loadSample} disabled={busy || exporting}>
+                <Database size={14} />
+                LOAD 36-ROW SAMPLE CSV
+              </button>
+            </div>
+          </div>
           <div className="page-heading">
             <div className="heading-copy">
               <div className="breadcrumb">
@@ -315,9 +377,6 @@ export default function App() {
               <button onClick={() => setError("")} aria-label="Dismiss error">
                 <X size={15} />
               </button>
-              {!result && (
-                <button onClick={loadSample}>Retry API connection</button>
-              )}
             </div>
           )}
           {notice && (
@@ -336,18 +395,12 @@ export default function App() {
           <div className={`dataset-banner ${custom ? "custom-dataset" : ""}`}>
             <span>
               <FlaskConical size={14} />
-              {custom
-                ? "CUSTOM SESSION DATASET — ALL MATCHES COMPUTED FROM YOUR CURRENT INPUTS."
-                : "SYNTHETIC BENCHMARK DATASET — MODELED ON B2B WHOLESALE AR LEDGERS. UPLOAD ANY CUSTOM CSV TO RUN LIVE."}
+              {workspaceMode === "sample"
+                ? "SYNTHETIC BENCHMARK DATASET — MODELED ON B2B WHOLESALE AR LEDGERS. UPLOAD ANY CUSTOM CSV TO RUN LIVE."
+                : workspaceMode === "blank"
+                  ? "EMPTY WORKSPACE — BUILD A LIVE CASE OR IMPORT YOUR OWN CSV FILES TO BEGIN."
+                  : "CUSTOM SESSION DATASET — ALL MATCHES COMPUTED FROM YOUR CURRENT INPUTS."}
             </span>
-            <button
-              onClick={loadSample}
-              disabled={busy}
-              title="Reset to original benchmark"
-            >
-              <RotateCcw size={12} />
-              <span>Reset benchmark</span>
-            </button>
           </div>
           <div className="workbench-toolbar">
             <div>
@@ -360,15 +413,13 @@ export default function App() {
                     : "Current ledger"}
               </b>
               <span className="mono muted">
-                {result
-                  ? `${number(data.invoices.length)} INVOICES / ${new Set(data.invoices.map((x) => x.customer_id)).size} COUNTERPARTIES`
-                  : "CONNECTING TO PYTHON API"}
+                {`${number(data.invoices.length)} INVOICES / ${number(data.deposits.length)} DEPOSITS / ${new Set(data.invoices.map((x) => x.customer_id)).size} COUNTERPARTIES`}
               </span>
             </div>
             <button
               className="simulator-button"
               onClick={() => setDrawer("simulator")}
-              disabled={!data.deposits.length || busy}
+              disabled={!data.deposits.length || !data.invoices.length || busy}
             >
               <SlidersHorizontal size={13} /> Live input simulator{" "}
               <span className="mono">WHAT-IF</span>
@@ -396,6 +447,10 @@ export default function App() {
               aria-busy={busy}
             >
               <ReconciliationGrid
+                key={workspaceRevision}
+                sourceDeposits={data.deposits}
+                onBuild={() => setDrawer("composer")}
+                onImport={() => setDrawer("upload")}
                 result={result}
                 selectedId={selectedId}
                 onSelect={setSelectedId}
@@ -418,7 +473,7 @@ export default function App() {
                   <span className="count">{data.invoices.length}</span>
                 </h2>
                 <button
-                  disabled={!dirty || busy}
+                  disabled={!dirty || busy || !data.deposits.length}
                   className="primary-button"
                   onClick={() => solve(data, config)}
                 >
@@ -687,11 +742,41 @@ export default function App() {
           onClose={closeDrawer}
           busy={busy}
           onApply={async (next) => {
+            const ok = await applySources(next);
+            if (ok) {
+              setWorkspaceMode("custom");
+              setWorkspaceRevision((n) => n + 1);
+              setView(
+                next.invoices.length && !next.deposits.length
+                  ? "invoices"
+                  : "workbench",
+              );
+              setFilter("all");
+              setNotice(
+                next.invoices.length && next.deposits.length
+                  ? "Validated source data applied. Every bank deposit was reconciled again."
+                  : "Source data staged. Import the other CSV to run reconciliation.",
+              );
+            }
+            return ok;
+          }}
+        />
+      )}
+      {drawer === "composer" && (
+        <LiveCaseComposer
+          data={data}
+          onClose={closeDrawer}
+          busy={busy}
+          backendError={error}
+          onRun={async (next) => {
             const ok = await solve(next, config);
             if (ok) {
-              setCustom(true);
+              setWorkspaceMode("live");
+              setWorkspaceRevision((n) => n + 1);
+              setView("workbench");
+              setFilter("all");
               setNotice(
-                "Validated source data applied. Every bank deposit was reconciled again.",
+                "Live case reconciled from your source records. Inspect the equation and journal below.",
               );
             }
             return ok;
@@ -722,7 +807,7 @@ export default function App() {
             </p>
             <button
               onClick={() => setDrawer("simulator")}
-              disabled={!data.deposits.length}
+              disabled={!data.deposits.length || !data.invoices.length}
             >
               <SlidersHorizontal size={14} /> Open live simulator
             </button>

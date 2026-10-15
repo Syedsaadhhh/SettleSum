@@ -27,6 +27,7 @@ with sync_playwright() as p:
     errors = []
     page.on("pageerror", lambda error: errors.append(str(error)))
     page.goto(options.url)
+    page.get_by_role("button", name="LOAD 36-ROW SAMPLE CSV").click()
     expect(page.locator(".metric strong").first).to_have_text("87.5%")
     page.evaluate("document.fonts.ready")
     assert not page.evaluate("document.documentElement.scrollWidth > innerWidth")
@@ -336,7 +337,7 @@ with sync_playwright() as p:
         "unsafe browser currency is rejected explicitly; current computed ledger remains intact"
     )
 
-    page.get_by_role("button", name="Reset benchmark", exact=True).click()
+    page.get_by_role("button", name="LOAD 36-ROW SAMPLE CSV", exact=True).click()
     expect(page.locator(".metric strong").first).to_have_text("87.5%")
     page.get_by_role("button", name="About the solver", exact=True).click()
     page.keyboard.press("Escape")

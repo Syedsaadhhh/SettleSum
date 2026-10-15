@@ -90,7 +90,9 @@ export async function api(
 }
 export async function download(path, body, filename) {
   const response = await api(path, body);
-  const blob = await response.blob();
+  saveBlob(await response.blob(), filename);
+}
+export function saveBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;

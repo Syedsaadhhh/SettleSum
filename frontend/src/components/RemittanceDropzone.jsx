@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Check, FileText, Upload, ArrowUpRight } from "lucide-react";
 import Drawer from "./Drawer";
-import { api, money, readJson } from "../utils";
+import { api, money, readJson, download, saveBlob } from "../utils";
 export default function RemittanceDropzone({
   data,
   onClose,
@@ -19,6 +19,33 @@ export default function RemittanceDropzone({
   const [pending, setPending] = useState(false);
   const [filename, setFilename] = useState("");
   const fileRef = useRef(null);
+  function template(kind) {
+    const headers =
+      kind === "invoices"
+        ? "invoice_id,customer_name,invoice_date,amount,discount_terms,customer_id,due_date"
+        : "deposit_id,deposit_date,raw_payer_memo,amount,bank_reference";
+    saveBlob(
+      new Blob([headers + "\r\n"], { type: "text/csv;charset=utf-8" }),
+      `blank-${kind}-template.csv`,
+    );
+  }
+  async function exportSource(kind = "ledger") {
+    setPending(true);
+    setError("");
+    try {
+      await download(
+        `/api/export-source-csv?kind=${kind}`,
+        data,
+        kind === "ledger"
+          ? "settlesum-ledger-csv.zip"
+          : `settlesum-${kind}.csv`,
+      );
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setPending(false);
+    }
+  }
   async function importFile(file) {
     if (!file) return;
     setError("");
@@ -37,6 +64,10 @@ export default function RemittanceDropzone({
       } else {
         const form = new FormData();
         form.append("file", file);
+        form.append(
+          "known_invoice_ids",
+          JSON.stringify(data.invoices.map((r) => r.invoice_id)),
+        );
         if (depositId) form.append("deposit_id", depositId);
         const response = await api("/api/parse-remittance", form, {});
         setParsed(await readJson(response));
@@ -56,6 +87,7 @@ export default function RemittanceDropzone({
         await readJson(
           await api("/api/parse-remittance", {
             text,
+            known_invoice_ids: data.invoices.map((r) => r.invoice_id),
             deposit_id: depositId || null,
             document_id: `REM-TEXT-${Date.now()}`,
           }),
@@ -119,6 +151,39 @@ export default function RemittanceDropzone({
         </div>
         {tab === "csv" ? (
           <>
+            <div
+              className="csv-tools"
+              aria-label="CSV templates and source exports"
+            >
+              <span className="small-label">CSV TEMPLATES & SOURCE FILES</span>
+              <button onClick={() => template("invoices")}>
+                Download Blank Invoice CSV Template
+              </button>
+              <button onClick={() => template("deposits")}>
+                Download Blank Deposit CSV Template
+              </button>
+              <button
+                onClick={() => exportSource()}
+                disabled={
+                  pending ||
+                  busy ||
+                  (!data.invoices.length && !data.deposits.length)
+                }
+              >
+                Download Current Ledger as CSV
+              </button>
+              <p className="help-text">
+                The ledger download is a ZIP containing separate invoice and
+                deposit CSV files, plus remittance JSON. Unzip, edit, and import
+                each CSV in either order.
+              </p>
+              <button
+                onClick={() => exportSource(kind)}
+                disabled={pending || busy || !data[kind].length}
+              >
+                Download {kind === "invoices" ? "invoice" : "deposit"} CSV only
+              </button>
+            </div>
             <label className="field-label">
               Dataset to replace
               <select
@@ -134,7 +199,8 @@ export default function RemittanceDropzone({
             </label>
             <p className="help-text">
               A validated CSV replaces the selected dataset for this session.
-              Other ledger data stays available.
+              Import either file first. The solver runs when invoices and
+              deposits are both present.
             </p>
           </>
         ) : (
@@ -194,15 +260,19 @@ export default function RemittanceDropzone({
         </div>
         {tab === "csv" ? (
           <details className="schema-help" open>
-            <summary>Required column schema</summary>
+            <summary>Flexible column schema</summary>
             <pre>
               {kind === "invoices"
-                ? "invoice_id, customer_id, customer_name,\ninvoice_date, due_date, amount_cents,\ndiscount_terms, discount_pct, discount_days"
+                ? "invoice_id, customer_name, invoice_date, amount\nOptional: customer_id, due_date, discount_terms,\ndiscount_pct, discount_days"
                 : "deposit_id, deposit_date, raw_payer_memo,\namount, bank_reference"}
             </pre>
             <p>
               Dates: YYYY-MM-DD. Use amount_cents as an integer, or amount in
-              dollars. Negative values are rejected.
+              dollars. Negative values are rejected. Missing customer IDs are
+              derived from customer names; missing due dates use Net terms (30
+              days by default). Headers such as Invoice ID, Customer, Terms,
+              Clearing Date, and Bank Memo are accepted. Blank optional discount
+              fields use defaults.
             </p>
           </details>
         ) : (

@@ -18,6 +18,15 @@ from .models import ReconcileRequest, Invoice, Deposit
 from .reconciliation import reconcile
 from .remittance_parser import parse_remittance, extract_text_pdf
 from .ledger_exporter import journal_csv, chargeback_csv
+from .csv_io import (
+    SourceLedger,
+    normalize_headers,
+    normalize_row,
+    source_archive,
+    source_csv,
+    INVOICE_COLUMNS,
+    DEPOSIT_COLUMNS,
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 app = FastAPI(title="SettleSum Reconciliation Engine", version="1.0.0")
@@ -122,6 +131,7 @@ async def parse_endpoint(request: Request):
     if int(request.headers.get("content-length", 0)) > 10 * 1024 * 1024:
         raise HTTPException(413, "Remittance exceeds the 10 MB limit")
     document_id, deposit_id = "uploaded-remittance", None
+    known_invoice_ids = []
     try:
         if "multipart/form-data" in content_type:
             form = await request.form(max_files=1, max_fields=4)
@@ -131,6 +141,7 @@ async def parse_endpoint(request: Request):
             content = await file.read(10 * 1024 * 1024 + 1)
             if len(content) > 10 * 1024 * 1024:
                 raise ValueError("Remittance exceeds the 10 MB limit")
+            known_invoice_ids = json.loads(form.get("known_invoice_ids", "[]"))
             document_id = file.filename or document_id
             deposit_id = form.get("deposit_id") or None
             text = (
@@ -146,6 +157,7 @@ async def parse_endpoint(request: Request):
                 else data.get("text", data.get("raw_text", ""))
             )
             if isinstance(data, dict):
+                known_invoice_ids = data.get("known_invoice_ids", [])
                 document_id, deposit_id = data.get(
                     "document_id", document_id
                 ), data.get("deposit_id")
@@ -155,7 +167,24 @@ async def parse_endpoint(request: Request):
             text = (await request.body()).decode("utf-8-sig")
         if len(text) > 100000:
             raise ValueError("Text exceeds 100,000 characters; split the remittance")
-        parsed, parser, warning = parse_remittance(text, document_id, deposit_id)
+        if (
+            not isinstance(known_invoice_ids, list)
+            or len(known_invoice_ids) > 2000
+            or any(
+                not isinstance(value, str) or not value or len(value) > 100
+                for value in known_invoice_ids
+            )
+        ):
+            raise ValueError(
+                "known_invoice_ids must be a list of at most 2,000 nonempty IDs"
+            )
+        if len({value.casefold() for value in known_invoice_ids}) != len(
+            known_invoice_ids
+        ):
+            raise ValueError("Remittance context contains ambiguous invoice IDs")
+        parsed, parser, warning = parse_remittance(
+            text, document_id, deposit_id, known_invoice_ids
+        )
         return {
             **parsed.model_dump(mode="json"),
             "parser": parser,
@@ -178,13 +207,18 @@ async def import_csv(request: Request, kind: str):
         reader = csv.DictReader(io.StringIO(content.decode("utf-8-sig")))
         if reader.fieldnames and len(reader.fieldnames) != len(set(reader.fieldnames)):
             raise ValueError("CSV contains duplicate column names")
+        if reader.fieldnames:
+            reader.fieldnames = normalize_headers(reader.fieldnames)
         rows = list(reader)
         if not rows:
             raise ValueError("CSV is empty; include a header and at least one data row")
         if len(rows) > (2000 if kind == "invoices" else 500):
             raise ValueError("CSV contains too many rows")
         model = Invoice if kind == "invoices" else Deposit
-        validated = [model.model_validate(row).model_dump(mode="json") for row in rows]
+        validated = [
+            model.model_validate(normalize_row(row, kind)).model_dump(mode="json")
+            for row in rows
+        ]
         key = "invoice_id" if kind == "invoices" else "deposit_id"
         if len({r[key] for r in validated}) != len(validated):
             raise ValueError(f"Duplicate {key}; IDs must be unique")
@@ -195,8 +229,29 @@ async def import_csv(request: Request, kind: str):
             "solve_time_ms": 0,
             "nodes_explored": 0,
         }
-    except (ValueError, UnicodeError, csv.Error, ValidationError) as exc:
+    except (ValueError, UnicodeError, csv.Error, ValidationError, OverflowError) as exc:
         raise HTTPException(422, str(exc)) from exc
+
+
+@app.post("/api/export-source-csv")
+def export_source(payload: SourceLedger, kind: str = "ledger"):
+    if kind not in ("ledger", "invoices", "deposits"):
+        raise HTTPException(422, "kind must be ledger, invoices, or deposits")
+    if kind == "ledger":
+        content, media_type, filename = (
+            source_archive(payload),
+            "application/zip",
+            "settlesum-ledger-csv.zip",
+        )
+    else:
+        columns = INVOICE_COLUMNS if kind == "invoices" else DEPOSIT_COLUMNS
+        content = source_csv(getattr(payload, kind), columns)
+        media_type, filename = "text/csv", f"settlesum-{kind}.csv"
+    return Response(
+        content,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.post("/api/export-journal-csv")
@@ -257,7 +312,7 @@ def export_audit(payload: ReconcileRequest, request: Request):
 
 
 # The built React client and Python API share one origin in production.
-if (ROOT / "frontend/dist").exists():
+if not os.environ.get("VERCEL") and (ROOT / "frontend/dist").exists():
     app.mount(
         "/", StaticFiles(directory=ROOT / "frontend/dist", html=True), name="terminal"
     )

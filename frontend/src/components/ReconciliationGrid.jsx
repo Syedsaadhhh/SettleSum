@@ -3,6 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { dateLabel, money } from "../utils";
 export default function ReconciliationGrid({
   result,
+  sourceDeposits = [],
+  onBuild,
+  onImport,
   selectedId,
   onSelect,
   filter,
@@ -44,7 +47,9 @@ export default function ReconciliationGrid({
         <h2>
           Bank deposits{" "}
           <span className="count">
-            {matches.length.toString().padStart(2, "0")}
+            {(result ? matches.length : sourceDeposits.length)
+              .toString()
+              .padStart(2, "0")}
           </span>
         </h2>
         <span className="small-label">USD</span>
@@ -131,20 +136,52 @@ export default function ReconciliationGrid({
             </button>
           );
         })}
-        {!rows.length && (
+        {!result &&
+          sourceDeposits.map((row) => (
+            <div className="deposit-row staged-deposit" key={row.deposit_id}>
+              <span>
+                <strong>{row.raw_payer_memo}</strong>
+                <span className="mono muted">
+                  {row.deposit_id} · {row.deposit_date}
+                </span>
+                <span className="small-label">STAGED / AWAITING INVOICES</span>
+              </span>
+              <strong className="mono">{money(row.amount_cents)}</strong>
+            </div>
+          ))}
+        {!result ? (
           <div className="empty-state">
             <Search size={22} />
-            <h3>No deposits found</h3>
-            <p>Try another payer name or choose All deposits.</p>
-            <button
-              onClick={() => {
-                setQuery("");
-                setFilter("all");
-              }}
-            >
-              Clear filters
+            <h3>
+              {sourceDeposits.length
+                ? "Import invoices to reconcile"
+                : "Your ledger starts here"}
+            </h3>
+            <p>
+              Create invoices and deposits, or import your own CSV files.
+              Results appear after the Python solver runs.
+            </p>
+            <button className="primary-button" onClick={onBuild}>
+              Build a live case
             </button>
+            <button onClick={onImport}>Import CSV files</button>
           </div>
+        ) : (
+          !rows.length && (
+            <div className="empty-state">
+              <Search size={22} />
+              <h3>No deposits found</h3>
+              <p>Try another payer name or choose All deposits.</p>
+              <button
+                onClick={() => {
+                  setQuery("");
+                  setFilter("all");
+                }}
+              >
+                Clear filters
+              </button>
+            </div>
+          )
         )}
       </div>
       <div className="register-footer">

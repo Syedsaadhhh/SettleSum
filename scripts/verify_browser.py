@@ -30,6 +30,7 @@ with sync_playwright() as p:
     errors = []
     page.on("pageerror", lambda error: errors.append(str(error)))
     page.goto(args.url)
+    page.get_by_role("button", name="LOAD 36-ROW SAMPLE CSV").click()
     page.get_by_text("87.5%", exact=True).wait_for()
     page.evaluate("document.fonts.ready")
     assert not page.evaluate("document.documentElement.scrollWidth > innerWidth")
@@ -70,7 +71,7 @@ with sync_playwright() as p:
     page.get_by_role("button", name="Exceptions 1", exact=True).click()
     page.locator(".deposit-row").click()
     assert page.get_by_text("No exact reconciliation found", exact=True).is_visible()
-    page.get_by_role("button", name="Reset benchmark", exact=True).click()
+    page.get_by_role("button", name="LOAD 36-ROW SAMPLE CSV", exact=True).click()
     page.get_by_text("87.5%", exact=True).wait_for()
 
     # A real CSV download and an empty upload failure.
@@ -100,7 +101,7 @@ with sync_playwright() as p:
     assert (
         response.value.json()["summary"]["unearned_discounts_recovered_cents"] == 40400
     )
-    page.get_by_role("button", name="Reset benchmark", exact=True).click()
+    page.get_by_role("button", name="LOAD 36-ROW SAMPLE CSV", exact=True).click()
     page.get_by_text("87.5%", exact=True).wait_for()
 
     # Entirely new customers, invoices, and deposits through the upload UI.
@@ -160,7 +161,7 @@ with sync_playwright() as p:
     page.get_by_role("dialog").wait_for(state="hidden")
 
     # Return screenshots to the labeled benchmark in both device sizes.
-    page.get_by_role("button", name="Reset benchmark", exact=True).click()
+    page.get_by_role("button", name="LOAD 36-ROW SAMPLE CSV", exact=True).click()
     page.get_by_text("87.5%", exact=True).wait_for()
     page.locator(".proof-inspector").evaluate("(el)=>el.scrollTop=el.scrollHeight")
     page.screenshot(path=str(shots / "desktop-journal.png"), full_page=True)

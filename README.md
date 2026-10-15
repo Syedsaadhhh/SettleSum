@@ -2,13 +2,27 @@
 
 **B2B cash application, multi-state lump-sum reconciliation, and margin recovery.**
 
-SettleSum reconciles bank deposits to computed combinations of open invoices, including valid early-payment discounts, expired discounts, documented short-pays, and permitted wire fees. Every match includes an exact-cent equation and a verified double-entry journal. The financial terminal supports live source edits, CSV imports, PDF/text remittances, and accounting exports.
+SettleSum reconciles bank deposits to computed combinations of open invoices, including valid early-payment discounts, expired discounts, documented short-pays, and permitted wire fees. Every match includes an exact-cent equation and a verified double-entry journal. The financial terminal starts with an empty ledger and supports an interactive live-case builder, source edits, flexible CSV imports, PDF/text remittances, and accounting exports.
 
 All included business records are **SYNTHETIC BENCHMARK DATA — modeled on B2B wholesale AR ledgers**. No included record represents a real customer transaction.
 
-![SettleSum financial terminal with computed synthetic benchmark results](docs/terminal.png)
+![SettleSum opens with an empty financial ledger](docs/blank-ledger.png)
 
-Screenshot of an actual synthetic-data run; solver timing varies. See [verification record](docs/VERIFICATION.md).
+The initial workspace contains no sample transactions or computed results. See the [workspace verification record](docs/WORKSPACE_VERIFICATION.md).
+
+## Start from zero
+
+The terminal opens with **zero invoices, zero deposits, no remittances, and no computed results**. Reloading starts a new blank session; records are held in browser memory.
+
+- **NEW BLANK LEDGER** clears all source records, results, selected records, and solver settings.
+- **+ BUILD LIVE TEST CASE** opens a composer. Enter any customer, add/remove invoice and deposit rows, select invoices for an exact sum preview, and optionally paste a remittance claim. Choose a fresh ledger or append to the current ledger. The exact-sum, $15 wire-fee, and 2% helpers only fill source amounts. **RUN SOLVER ON THIS LEDGER** sends those records to Python; matches, invoice states, telemetry, and journals are returned by the real solver.
+- **LOAD 36-ROW SAMPLE CSV** explicitly loads the synthetic benchmark source records and reconciles them from scratch. Samples are never loaded on startup.
+
+**Import data** includes blank invoice/deposit templates and current source-ledger downloads. Download the ledger ZIP, extract its two CSV files, edit them in a spreadsheet, clear the workspace, and import each file. Either import order works: the first file is staged, and reconciliation runs once both invoices and deposits exist. The ZIP also contains remittance JSON as a source backup; attach claims through the PDF/text importer when restoring a ledger.
+
+![Computed live case with custom invoice records and balanced accounting proof](docs/live-case.png)
+
+Actual browser run of a custom test case; solver timing varies.
 
 ## Run locally
 
@@ -33,6 +47,16 @@ bash scripts/dev.sh
 
 Open **http://localhost:5173**. Vite proxies `/api` to Python on port 8000. Stop with Ctrl+C. Restart the Python server after creating the first production build so its static mount is registered.
 
+## Deploy to Vercel
+
+Import **Syedsaadhhh/SettleSum** into Vercel with the repository root as the **Root Directory**. The checked-in `vercel.json` selects the custom build (`Other` framework), runs `npm --prefix frontend ci && npm --prefix frontend run build`, serves `frontend/dist`, and routes `/api/*` to `api/index.py`. No API URL, CORS override, database, or API key is required for the default offline workflow.
+
+`api/index.py` adds the project root to Python's import path and exports `backend.main.app`. Root `requirements.txt` includes the backend requirements. The function bundle explicitly includes backend code and benchmark source files. FastAPI imports cleanly without `frontend/dist`; on Vercel, static files are served by the CDN instead of Python.
+
+Optionally add `GEMINI_API_KEY` as a server-side Vercel environment variable to enable Gemini remittance extraction. Never use a `VITE_` prefix for that secret. Without a key, deterministic local parsing remains available. Vercel's function request/response body limit is 4.5 MB, which takes precedence over the local API's larger upload limits. Keep uploaded files and reconciliation JSON below that limit. Search remains bounded by the configured node budget and the platform's execution limits.
+
+These instructions prepare deployment; verification below exercises the local ASGI entry point and browser flows. No hosted deployment is implied by a successful local build.
+
 ## Verify
 
 ```bash
@@ -43,7 +67,7 @@ npm --prefix frontend test
 npm --prefix frontend run build
 ```
 
-**54 Python tests and 4 frontend currency tests** verify the current implementation. The dedicated five-point torture suite verifies the exact alien CSV, a one-cent mutation, earned-to-unearned date changes, double-entry invariants, and offline remittance extraction. See the [hard-pass audit report](docs/HARD_PASS_AUDIT.md). The suite covers the seven real computed benchmark matches and exception; a removed $15 fee; a one-cent amount edit; a changed clearing date; invoice-date edits; disabled fees; duplicate prevention; empty/negative/malformed input; PDF/text parsing; journal exports; custom fee bands; exact rounding; FIFO/remittance ranking; search budgets; and a 1,200-invoice input. An independent exhaustive oracle checks branch-and-bound results on generated small ledgers. GitHub Actions runs the static source guard, full Python suite, frontend currency tests, and production frontend build on pushes and pull requests.
+**66 Python tests and 7 frontend tests** (including all original 54 backend tests) verify the current implementation. The dedicated five-point torture suite verifies the exact alien CSV, a one-cent mutation, earned-to-unearned date changes, double-entry invariants, and offline remittance extraction. See the [historical hard-pass audit report](docs/HARD_PASS_AUDIT.md) and [workspace verification](docs/WORKSPACE_VERIFICATION.md). The suite covers the seven real computed benchmark matches and exception; a removed $15 fee; a one-cent amount edit; a changed clearing date; invoice-date edits; disabled fees; duplicate prevention; empty/negative/malformed input; PDF/text parsing; journal exports; custom fee bands; exact rounding; FIFO/remittance ranking; search budgets; and a 1,200-invoice input. An independent exhaustive oracle checks branch-and-bound results on generated small ledgers. GitHub Actions runs the static source guard, full Python suite, frontend currency tests, and production frontend build on pushes and pull requests.
 
 An optional full-stack browser smoke check is included in `scripts/verify_browser.py`. With Playwright installed and a Chromium executable available, run it against the live server:
 
@@ -51,6 +75,7 @@ An optional full-stack browser smoke check is included in `scripts/verify_browse
 python -m pip install playwright
 python scripts/verify_browser.py --url http://localhost:8000 --browser /usr/bin/chromium
 python scripts/verify_hard_pass_browser.py --url http://localhost:8000 --browser /usr/bin/chromium
+python scripts/verify_workspace_browser.py --url http://localhost:8000 --browser /usr/bin/chromium
 ```
 
 These checks drive real uploads and API calls. The hard-pass browser script compares telemetry, invoice states, GL cells, and CSV/audit exports after amount/date mutations, wire-fee and discount toggles, custom fee bands, and offline claims. It also checks dataset replacement, keyboard controls, safe-integer rejection, and desktop/mobile overflow. No HTTP responses or computation results are mocked.
@@ -79,7 +104,7 @@ Baseline: **7/8 deposits**, **$87,982.00** reconciled cash, **$164.00** identifi
 3. Change clearing date from **2026-10-09** to **2026-10-19**.
 4. Click **RE-SOLVE LEDGER**.
 
-Its two discounts retain the same mathematical payment values but move from **GL 4910** to **GL 1215**. Identified recovery rises from **$164.00 to $604.00**. Reset benchmark restores the original source records and runs the solver again.
+Its two discounts retain the same mathematical payment values but move from **GL 4910** to **GL 1215**. Identified recovery rises from **$164.00 to $604.00**. LOAD 36-ROW SAMPLE CSV restores the original source records and runs the solver again.
 
 Changing Apex DEP-9001 from $14,835.00 to $14,850.00 removes the inferred $15 fee. Adding only $0.01 results in an exception under the default fee rules. These outcomes are computed from the submitted records; no deposit ID is a solver instruction.
 
@@ -123,9 +148,9 @@ deposit_id,deposit_date,raw_payer_memo,amount,bank_reference
 PAYMENT-001,2026-10-09,ACH EXAMPLE MANUFACTURING,980.00,REFERENCE-01
 ```
 
-Use ISO dates, unique invoice/deposit IDs, positive amounts, and consistent customer names per customer ID. Either schema accepts dollar `amount` or integer `amount_cents`; explicit cents take precedence when both are supplied. If discount fields are omitted, `2/10 Net 30` terms can supply the rate/window. Explicit rate/window fields take precedence.
+Use ISO dates, unique invoice/deposit IDs, positive amounts, and consistent customer names per customer ID. Either schema accepts dollar `amount` or integer `amount_cents`; explicit cents take precedence when both are supplied. If discount fields are omitted or blank, `2/10 Net 30` terms can supply the rate/window. Explicit rate/window fields take precedence. Only `invoice_id`, `customer_name`, `invoice_date`, and either `amount` or `amount_cents` are required for invoice CSV ingestion. Missing customer IDs derive deterministically from normalized names; missing due dates use Net terms, defaulting to 30 days. Headers are case/space insensitive; aliases include `Invoice Number`, `Customer`, `Invoice Amount`, `Terms`, `Clearing Date`, `Bank Memo`, and `Deposit Amount`. Duplicate canonical headers and malformed rows are rejected.
 
-Importing a CSV replaces that session's selected source dataset. Frontend input changes are held in memory; a browser reload loads the synthetic benchmark. There is no database or external posting integration.
+Importing a CSV replaces that session's selected source dataset. Frontend input changes are held in memory; a browser reload opens a blank ledger. There is no database or external posting integration.
 
 ### Remittance extraction
 
@@ -136,7 +161,7 @@ Customer: Example Manufacturing
 Applying $25 debit memo DM-101 against INV-EXAMPLE-001 for damaged goods
 ```
 
-The deterministic offline parser reads explicit invoice IDs and claim amounts. Put one invoice claim per line for unambiguous attribution. It does not infer an amount when multiple amounts appear in one segment. Review extracted references before applying. Image-only PDFs require pasted text or a text-based document; OCR is not included.
+The deterministic offline parser reads explicit invoice IDs and claim amounts. The composer and import drawer provide current invoice IDs as parsing context, so custom IDs and their exact capitalization are preserved. Without context the generic INV/INVOICE pattern is used. Put one invoice claim per line for unambiguous attribution. It does not infer an amount when multiple amounts appear in one segment. Review extracted references before applying. Image-only PDFs require pasted text or a text-based document; OCR is not included.
 
 Set `GEMINI_API_KEY` in the Python process environment to enable optional **Gemini 2.5 Flash** extraction. It falls back to the offline parser on provider errors or invalid output. With a key configured, remittance text is sent to Gemini; without one, extraction is local. `.env.example` documents variables, but `.env` is not loaded automatically. Never commit keys.
 
@@ -150,6 +175,7 @@ Set `GEMINI_API_KEY` in the Python process environment to enable optional **Gemi
 | `POST /api/parse-remittance`                     | JSON text, raw text/PDF, or multipart `file`        | Validated references, parser name, warnings                                             |
 | `POST /api/import-csv?kind=invoices`             | Raw UTF-8 CSV body                                  | Validated invoice rows                                                                  |
 | `POST /api/import-csv?kind=deposits`             | Raw UTF-8 CSV body                                  | Validated deposit rows                                                                  |
+| `POST /api/export-source-csv?kind=ledger`         | Source invoices/deposits/remittances; partial ledgers allowed | ZIP of lossless invoice/deposit CSVs and remittance JSON; `kind=invoices` or `deposits` downloads a single CSV |
 | `POST /api/export-journal-csv?vendor=quickbooks` | Reconciliation request                              | QuickBooks journal CSV                                                                  |
 | `POST /api/export-journal-csv?vendor=xero`       | Reconciliation request                              | Xero manual journal CSV                                                                 |
 | `POST /api/export-audit-json`                    | Reconciliation request                              | Fresh result, source inputs/configuration, source SHA-256, UTC timestamp, and telemetry |
@@ -175,7 +201,7 @@ Example request shape:
 }
 ```
 
-Populate the arrays with records; empty ledgers intentionally return structured `422 VALIDATION_ERROR`. Non-solver endpoints report zero solver metrics. All API responses also expose `X-Solver-Time-Ms`, `X-Nodes-Explored`, and measured `X-Request-Time-Ms` headers; CSV responses carry telemetry in these headers. Exports recompute the current request and never trust client-supplied journal lines. The audit JSON’s source hash identifies its canonical inputs; it is not a digital signature.
+Populate the arrays with records; empty ledgers intentionally return structured `422 VALIDATION_ERROR`. Non-solver endpoints report zero solver metrics. All API responses also expose `X-Solver-Time-Ms`, `X-Nodes-Explored`, and measured `X-Request-Time-Ms` headers; CSV responses carry telemetry in these headers. Accounting and audit exports recompute the current request and never trust client-supplied journal lines. Source CSV exports serialize input records without running the solver. The audit JSON’s source hash identifies its canonical inputs; it is not a digital signature.
 
 ## Accounting treatment
 
@@ -195,7 +221,11 @@ QuickBooks exports use journal-import fields; Xero exports use signed manual-jou
 ## Repository
 
 ```text
+api/index.py              Vercel ASGI entry point
+vercel.json               Frontend build, static output, API rewrites
+requirements.txt          Root Python dependency entry point
 backend/
+  csv_io.py               Flexible CSV normalization and source exports
   main.py                 FastAPI, validation, imports, exports, static serving
   models.py               Typed, validated schemas and currency ingress
   solver.py               Multi-state branch-and-bound; exact integer arithmetic
@@ -206,6 +236,7 @@ backend/
   test_solver.py          Benchmark, changes, failure cases, oracle checks
   test_hard_pass.py       Five required API torture scenarios
   test_audit_regressions.py  Validation, boundaries, ambiguity, and audit export
+  test_workspace.py        CSV round-trips, custom IDs, Vercel entry point
 frontend/
   src/App.jsx             Financial operations terminal
   src/components/         Register, proofs, telemetry, simulator, import drawers

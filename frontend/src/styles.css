@@ -11,6 +11,7 @@
   background: #0b0e14;
   font-synthesis: none;
   font-size: 12px;
+  --mono: "IBM Plex Mono", monospace;
   --bg: #0b0e14;
   --panel: #11161f;
   --line: #242c38;
@@ -2990,5 +2991,259 @@ td strong {
   }
   .app-footer {
     font-size: 8px;
+  }
+}
+
+/* Source-ledger workspaces and live transaction composer. */
+.workspace-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.workspace-mode {
+  display: grid;
+  gap: 3px;
+  font-size: 11px;
+}
+.workspace-mode b {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+.workspace-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.workspace-actions button {
+  font-size: 10px;
+  min-height: 34px;
+}
+.wide-drawer {
+  width: min(940px, 100%);
+}
+.composer-form {
+  overflow-y: auto;
+  min-height: 0;
+  padding: 20px 24px;
+}
+.composer-fields {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.composer-intro {
+  margin-bottom: 20px;
+}
+.composer-customer {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 16px;
+}
+.composer-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0 10px;
+}
+.composer-section-heading h3 {
+  font: 11px var(--mono);
+  letter-spacing: 0.07em;
+}
+.composer-record {
+  border: 1px solid var(--line);
+  padding: 12px;
+  margin: 12px 0;
+  min-width: 0;
+}
+.composer-record legend {
+  font: 11px var(--mono);
+  padding: 0 7px;
+  color: var(--muted);
+}
+.composer-record-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  gap: 8px;
+  font-size: 11px;
+}
+.checkbox-field {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.checkbox-field input {
+  width: 14px;
+  height: 14px;
+  accent-color: #388bfd;
+}
+.composer-invoice-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr 0.9fr 1.1fr;
+  gap: 10px;
+}
+.composer-deposit-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 10px;
+}
+.composer-memo {
+  grid-column: 1 / -1;
+}
+.composer-form .field-label {
+  margin-bottom: 0;
+}
+.composer-form input,
+.composer-form select,
+.composer-form textarea {
+  min-width: 0;
+  width: 100%;
+}
+.composer-form .checkbox-field input {
+  width: 14px;
+}
+.composer-form input:not([type="checkbox"]),
+.composer-form select {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 8px;
+}
+.composer-sum {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-block: 1px solid var(--line);
+  padding: 14px 0;
+  margin: 16px 0;
+  gap: 12px;
+}
+.composer-sum span {
+  font: 10px var(--mono);
+  letter-spacing: 0.04em;
+}
+.composer-sum small {
+  display: block;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.composer-sum strong {
+  font-size: 20px;
+}
+.amount-helpers {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.amount-helpers > span {
+  font: 9px var(--mono);
+  color: var(--muted);
+}
+.amount-helpers button {
+  font-size: 10px;
+  padding: 6px 8px;
+}
+.composer-submit {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  border-top: 1px solid var(--line);
+  margin-top: 20px;
+  padding: 18px 0 0;
+}
+.composer-submit span {
+  font-size: 10px;
+  color: var(--muted);
+}
+.composer-submit button {
+  flex-shrink: 0;
+}
+.csv-tools {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--line);
+  padding: 12px;
+  margin: 16px 0;
+}
+.csv-tools button {
+  justify-content: flex-start;
+  text-align: left;
+  font-size: 11px;
+}
+.csv-tools .help-text {
+  margin: 4px 0;
+}
+.staged-deposit {
+  cursor: default;
+  gap: 12px;
+}
+.staged-deposit > span {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.staged-deposit > span strong {
+  overflow-wrap: anywhere;
+}
+.bank-register .empty-state {
+  padding: 28px 20px;
+}
+.bank-register .empty-state button {
+  margin-top: 10px;
+}
+@media (max-width: 1100px) {
+  .workspace-bar {
+    align-items: flex-start;
+  }
+  .workspace-mode {
+    min-width: 110px;
+  }
+  .workspace-actions {
+    justify-content: flex-end;
+  }
+}
+@media (max-width: 650px) {
+  .workspace-bar {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .workspace-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .workspace-actions button {
+    flex: 1 1 180px;
+  }
+  .composer-form {
+    padding: 16px;
+  }
+  .composer-customer,
+  .composer-invoice-grid,
+  .composer-deposit-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .composer-submit {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .composer-sum strong {
+    font-size: 17px;
+  }
+}
+@media (max-width: 400px) {
+  .composer-customer,
+  .composer-invoice-grid,
+  .composer-deposit-grid {
+    grid-template-columns: 1fr;
   }
 }

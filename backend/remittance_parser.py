@@ -15,7 +15,18 @@ INVOICE_PATTERN = r"\bINV(?:OICE)?[- ][A-Z0-9]+(?:-[A-Z0-9]+)*\b"
 AMOUNT = r"\$\s*([\d,]+(?:\.\d{1,2})?)"
 
 
-def regex_parse(text, document_id="uploaded-remittance", deposit_id=None):
+def regex_parse(
+    text, document_id="uploaded-remittance", deposit_id=None, known_invoice_ids=None
+):
+    canonical = {value.casefold(): value for value in (known_invoice_ids or [])}
+    known = "|".join(
+        re.escape(value) for value in sorted(canonical.values(), key=len, reverse=True)
+    )
+    pattern = (
+        rf"(?<![\w-])(?:{known})(?![\w-])|{INVOICE_PATTERN}"
+        if known
+        else INVOICE_PATTERN
+    )
     customer = re.search(r"(?:customer|payer|from)\s*:\s*([^\n;]+)", text, re.I)
     if not customer:
         customer = re.search(
@@ -25,9 +36,11 @@ def regex_parse(text, document_id="uploaded-remittance", deposit_id=None):
         )
     references = {}
     for line in text.splitlines():
-        ids = list(re.finditer(INVOICE_PATTERN, line, re.I))
+        ids = list(re.finditer(pattern, line, re.I))
         for index, hit in enumerate(ids):
-            invoice_id = hit[0].upper().replace(" ", "-")
+            invoice_id = canonical.get(
+                hit[0].casefold(), hit[0].upper().replace(" ", "-")
+            )
             start = 0 if index == 0 else hit.start()
             end = ids[index + 1].start() if index + 1 < len(ids) else len(line)
             segment = line[start:end]
@@ -86,10 +99,12 @@ def extract_text_pdf(content):
     return text
 
 
-def parse_remittance(text, document_id="uploaded-remittance", deposit_id=None):
+def parse_remittance(
+    text, document_id="uploaded-remittance", deposit_id=None, known_invoice_ids=None
+):
     if not text.strip():
         raise ValueError("Remittance is empty; paste text or upload a text-based PDF")
-    fallback = regex_parse(text, document_id, deposit_id)
+    fallback = regex_parse(text, document_id, deposit_id, known_invoice_ids)
     key = os.environ.get("GEMINI_API_KEY")
     warning = None
     if key:
@@ -141,6 +156,11 @@ def parse_remittance(text, document_id="uploaded-remittance", deposit_id=None):
                 for ref in parsed.referenced_invoices
             ):
                 raise ValueError("Extracted invoice was not present in source")
+            canonical = {value.casefold(): value for value in (known_invoice_ids or [])}
+            for ref in parsed.referenced_invoices:
+                ref.invoice_id = canonical.get(
+                    ref.invoice_id.casefold(), ref.invoice_id
+                )
             return parsed, "gemini-2.5-flash", None
         except Exception:
             warning = "Gemini unavailable or extraction invalid; deterministic offline parser used."
