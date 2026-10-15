@@ -1,0 +1,24 @@
+[
+  {
+    "document_id": "REM-DM-442",
+    "deposit_id": "DEP-9004",
+    "customer_name": "Northstar Precision Manufacturing",
+    "raw_text": "Customer: Northstar Precision Manufacturing\nApplying $340 debit memo DM-442 against Inv #INV-2026-114 for cracked CNC flange\nPayment also covers INV-2026-115 in full.",
+    "referenced_invoices": [
+      {
+        "invoice_id": "INV-2026-114",
+        "paid_amount_cents": null,
+        "deduction_cents": 34000,
+        "reason_code": "DAMAGED_GOODS",
+        "note": "Applying $340 debit memo DM-442 against Inv #INV-2026-114 for cracked CNC flange"
+      },
+      {
+        "invoice_id": "INV-2026-115",
+        "paid_amount_cents": null,
+        "deduction_cents": 0,
+        "reason_code": "DOCUMENTED_CLAIM",
+        "note": "Payment also covers INV-2026-115 in full."
+      }
+    ]
+  }
+]

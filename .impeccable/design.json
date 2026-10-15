@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "mode": "operate",
+  "authority": "user specification",
+  "colors": {
+    "background": "#0B0E14",
+    "panel": "#11161F",
+    "border": "#1E2633",
+    "text": "#E6EDF3",
+    "muted": "#7D8590",
+    "green": "#2EA043",
+    "amber": "#D29922",
+    "red": "#F85149",
+    "blue": "#388BFD"
+  },
+  "paletteUsage": "colors records the user-pinned base palette; foregroundColors and structuralLines record the rendered implementation tokens",
+  "foregroundColors": {
+    "text": "#E6EDF3",
+    "muted": "#929BA8",
+    "green": "#5AC77C",
+    "amber": "#E6B450",
+    "red": "#FF827B",
+    "blue": "#70ACFF"
+  },
+  "structuralLines": {
+    "default": "#242C38",
+    "soft": "#1B232E",
+    "width": "1px"
+  },
+  "fonts": {
+    "labels": "Inter",
+    "data": "IBM Plex Mono",
+    "loading": "self-hosted bundled Fontsource files",
+    "numerals": "tabular"
+  },
+  "corners": "2px default buttons and fields; square panels, tabs and register rows; 3px navigation icon buttons",
+  "structure": "above 800px: fixed 100dvh desktop viewport with independently scrolling register rows and proof inspector; at 800px and below: stacked normal page flow with a vertically scrolling deposit list capped at 380px",
+  "navigationRail": "62px; 52px at 1000px and below; 46px at 550px and below",
+  "accountingTables": "dense, horizontally scrollable tables with 1px rules"
+}

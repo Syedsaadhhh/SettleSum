@@ -1,0 +1,4 @@
+SYNTHETIC BENCHMARK REMITTANCE
+Customer: Northstar Precision Manufacturing
+Applying $340 debit memo DM-442 against Inv #INV-2026-114 for cracked CNC flange
+Payment also covers INV-2026-115 in full.
