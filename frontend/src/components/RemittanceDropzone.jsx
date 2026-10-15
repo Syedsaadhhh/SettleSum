@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Check, FileText, Upload, ArrowUpRight } from "lucide-react";
 import Drawer from "./Drawer";
-import { api, money } from "../utils";
+import { api, money, readJson } from "../utils";
 export default function RemittanceDropzone({
   data,
   onClose,
@@ -33,13 +33,13 @@ export default function RemittanceDropzone({
           await file.text(),
           { "Content-Type": "text/csv" },
         );
-        setRows((await response.json()).rows);
+        setRows((await readJson(response)).rows);
       } else {
         const form = new FormData();
         form.append("file", file);
         if (depositId) form.append("deposit_id", depositId);
         const response = await api("/api/parse-remittance", form, {});
-        setParsed(await response.json());
+        setParsed(await readJson(response));
       }
     } catch (e) {
       setError(e.message);
@@ -53,13 +53,13 @@ export default function RemittanceDropzone({
     setParsed(null);
     try {
       setParsed(
-        await (
+        await readJson(
           await api("/api/parse-remittance", {
             text,
             deposit_id: depositId || null,
             document_id: `REM-TEXT-${Date.now()}`,
-          })
-        ).json(),
+          }),
+        ),
       );
     } catch (e) {
       setError(e.message);
@@ -215,7 +215,7 @@ export default function RemittanceDropzone({
               id="remittance-text"
               rows="6"
               placeholder={
-                "Customer: Northstar Precision Manufacturing\nApplying $340 debit memo against INV-2026-114 for cracked CNC flange"
+                "Paste the customer, exact invoice reference, deduction amount, and reason from your remittance advice."
               }
               value={text}
               onChange={(e) => {

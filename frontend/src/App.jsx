@@ -23,7 +23,15 @@ import ReconciliationGrid from "./components/ReconciliationGrid";
 import MathProofInspector from "./components/MathProofInspector";
 import LiveSimulatorDrawer from "./components/LiveSimulatorDrawer";
 import RemittanceDropzone from "./components/RemittanceDropzone";
-import { api, download, money, number } from "./utils";
+import {
+  api,
+  download,
+  money,
+  number,
+  readJson,
+  centsToDollars,
+  dollarsToCents,
+} from "./utils";
 
 const initialConfig = {
   allow_wire_fees: true,
@@ -61,7 +69,7 @@ export default function App() {
         ...nextData,
         config: nextConfig,
       });
-      const next = await response.json();
+      const next = await readJson(response);
       setData(nextData);
       setConfig(nextConfig);
       setResult(next);
@@ -90,7 +98,7 @@ export default function App() {
     setNotice("");
     setSelectedId(null);
     try {
-      const sample = await (await api("/api/sample-data")).json();
+      const sample = await readJson(await api("/api/sample-data"));
       const next = {
         invoices: sample.invoices,
         deposits: sample.deposits,
@@ -121,14 +129,18 @@ export default function App() {
       const endpoint =
         type === "chargebacks"
           ? `/api/export-chargebacks-csv${depositId ? `?deposit_id=${encodeURIComponent(depositId)}` : ""}`
-          : `/api/export-journal-csv?vendor=${type}`;
+          : type === "audit"
+            ? "/api/export-audit-json"
+            : `/api/export-journal-csv?vendor=${type}`;
       await download(
         endpoint,
         { ...data, config },
-        `settlesum-${type}${depositId ? `-${depositId}` : ""}.csv`,
+        `settlesum-${type}${depositId ? `-${depositId}` : ""}.${type === "audit" ? "json" : "csv"}`,
       );
       setNotice(
-        `${type === "chargebacks" ? "Draft debit memo summary" : "Balanced journal"} downloaded. ${type === "chargebacks" ? "Review before posting." : "Map account names to your accounting system before importing."}`,
+        type === "audit"
+          ? "Fresh reconciliation audit downloaded with source inputs, accounting proof, source hash, and measured telemetry."
+          : `${type === "chargebacks" ? "Draft debit memo summary" : "Balanced journal"} downloaded. ${type === "chargebacks" ? "Review before posting." : "Map account names to your accounting system before importing."}`,
       );
     } catch (e) {
       setError(e.message);
@@ -221,9 +233,7 @@ export default function App() {
                   : "API DISCONNECTED"}
             </span>
             <span className="header-divider" />
-            <span className="workspace-id">
-              LOCAL WORKSPACE <ChevronDown size={12} />
-            </span>
+            <span className="workspace-id">LOCAL WORKSPACE</span>
           </div>
         </header>
         <main>
@@ -285,6 +295,9 @@ export default function App() {
                       </button>
                       <button onClick={() => exportFile("xero")}>
                         Xero journal CSV
+                      </button>
+                      <button onClick={() => exportFile("audit")}>
+                        Reconciliation audit JSON
                       </button>
                       <button onClick={() => exportFile("chargebacks")}>
                         Chargeback debit memos
@@ -466,14 +479,14 @@ export default function App() {
                             min=".01"
                             value={
                               Number.isFinite(i.amount_cents)
-                                ? i.amount_cents / 100
+                                ? centsToDollars(i.amount_cents)
                                 : ""
                             }
                             onChange={(e) =>
                               updateInvoice(
                                 i.invoice_id,
                                 "amount_cents",
-                                Math.round(Number(e.target.value) * 100),
+                                dollarsToCents(e.target.value),
                               )
                             }
                           />
@@ -582,7 +595,10 @@ export default function App() {
             <section className="data-panel">
               <div className="panel-heading">
                 <h2>
-                  Computed journal <span className="badge green">BALANCED</span>
+                  Computed journal{" "}
+                  <span className={`badge ${result ? "green" : "muted"}`}>
+                    {result ? "BALANCED" : "AWAITING LEDGER"}
+                  </span>
                 </h2>
                 <span className="small-label">DRAFT · NOT POSTED</span>
               </div>

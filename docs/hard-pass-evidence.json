@@ -1,0 +1,108 @@
+{
+  "status": "HARD_PASS",
+  "audited_at": "2026-10-15T13:09:02.415577+00:00",
+  "base_commit": "2a6ed479d162d2099c10f5587ec99c93fcc3359b",
+  "static_scan": {
+    "status": "PASS",
+    "source_files_scanned": 21,
+    "scope": [
+      "backend/__init__.py",
+      "backend/entity_resolver.py",
+      "backend/ledger_exporter.py",
+      "backend/main.py",
+      "backend/models.py",
+      "backend/reconciliation.py",
+      "backend/remittance_parser.py",
+      "backend/solver.py",
+      "frontend/index.html",
+      "frontend/public/favicon.svg",
+      "frontend/src/App.jsx",
+      "frontend/src/components/Drawer.jsx",
+      "frontend/src/components/LedgerHeader.jsx",
+      "frontend/src/components/LiveSimulatorDrawer.jsx",
+      "frontend/src/components/MathProofInspector.jsx",
+      "frontend/src/components/ReconciliationGrid.jsx",
+      "frontend/src/components/RemittanceDropzone.jsx",
+      "frontend/src/main.jsx",
+      "frontend/src/styles.css",
+      "frontend/src/utils.js",
+      "frontend/vite.config.js"
+    ],
+    "failures": [],
+    "checks": [
+      "No sample names or concrete fixture IDs in app source",
+      "No fake latency calls",
+      "No floating monetary literals/conversions/true division in solver/exporter",
+      "Real recursive node counter and measured wall time",
+      "No external solver package",
+      "No CSS gradients"
+    ]
+  },
+  "five_point_pytest": {
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 5,
+    "elapsed_seconds": 0.63
+  },
+  "full_pytest": {
+    "tests": 54,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 54,
+    "elapsed_seconds": 0.95
+  },
+  "frontend_currency_tests": {
+    "passed": 4,
+    "failed": 0
+  },
+  "production_build": {
+    "status": "PASS",
+    "elapsed_seconds": 4.76
+  },
+  "browser": {
+    "status": "PASS",
+    "checks_passed": 12,
+    "checks": [
+      "benchmark loads from API and computes 7/8",
+      "alien CSVs replace active data; solver, telemetry, proof, GL cells, CSV and audit exports agree",
+      "+1 cent updates actual request, telemetry and exception UI; no journal exported",
+      "custom fee band genuinely creates exact 1499-cent fee and matching journal/export",
+      "wire-fee toggle removes inferred fee state; full cash amount resolves without fee",
+      "date change updates API source, recovery ribbon, invoice state, GL1215 and exported CSV",
+      "discount toggle removes/restores genuine valuation states across all views",
+      "generic date-shift control works on unseen customer and exported audit uses latest source",
+      "exact unstructured remittance parses offline, applies claim, and updates GL1220/CSV",
+      "unsafe browser currency is rejected explicitly; current computed ledger remains intact",
+      "about dialog, real search shortcut, filters, and reset controls work",
+      "desktop/mobile have no document overflow and no JavaScript runtime errors"
+    ],
+    "runtime_errors": []
+  },
+  "original_browser_smoke": "PASS",
+  "source_sha256": {
+    "backend/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend/entity_resolver.py": "a68407502f6e66aa5fc61eb007d53183d5c6873ef58a2bbeff75f830c8a13121",
+    "backend/ledger_exporter.py": "eeec91ab545cba68b0aaa2d8ce56bd27ae1c3c360c9ee686f06410c79cfb7b22",
+    "backend/main.py": "577af0db6c0ea357a095a62012cdc73dc9ac9802bb833f33b004839b4d86f810",
+    "backend/models.py": "c41fd60930ed8e81394291970f9a3f1923baf379331014029f4a27cb692b8549",
+    "backend/reconciliation.py": "bd127a280b535210130d759b1fca9d4fd990754f3789773a634eef1dbe8b3444",
+    "backend/remittance_parser.py": "387d62fa964b974c5beaa28a6714205982cb12cd38f242263fa10f51efe274a8",
+    "backend/solver.py": "5ff64408034bfdee9ec497831bd4aeadd1ba8a6b3eb908ff1aa00ce1d9f60003",
+    "frontend/index.html": "3f50472d5b4996f3b909ac0ee680f92773ca046a3752e014a3a197e69933648b",
+    "frontend/public/favicon.svg": "087464288c1e28dec0c88f44a9eac000a68f8c8a71d866cb5058ca6f698c26c7",
+    "frontend/src/App.jsx": "cc2fcf315b5985bf3164831150f34aec52f38d9e37b13a879146198112a8b9d3",
+    "frontend/src/components/Drawer.jsx": "e168e8d5d87ae927ce9f147d539bba632dd9461a5a9d8ab297006fa4b95f1114",
+    "frontend/src/components/LedgerHeader.jsx": "5fa01be150034ecddf78a3d144e32235cd566a16e9b53331d02823297144fc4a",
+    "frontend/src/components/LiveSimulatorDrawer.jsx": "eba894fb42e7b7068eb6dd07d32d69c4f2c08620474e4cfeb20fc9c654749543",
+    "frontend/src/components/MathProofInspector.jsx": "2afef4f22090fadd8180fd6dd3c25a07716c4a5d3725eacba68d75e5dde42adc",
+    "frontend/src/components/ReconciliationGrid.jsx": "a29648896fea93d865cb1c10328ca74eb6e0f931b785cfaf1dbd84bdab2419fb",
+    "frontend/src/components/RemittanceDropzone.jsx": "4dce7a3cf5c3a9368e524a0d6465712b67bb4799a3c45abc5fa603608a8c4f75",
+    "frontend/src/main.jsx": "53d2eee84c6871b3c67ca385d4a4fcc84f4f6c40c89fdc0db52e5219f94bcf4c",
+    "frontend/src/styles.css": "4fa8c9090130c5d0ceadcf31cb599c5e5606621d342e9fadccde6cbf43075eb7",
+    "frontend/src/utils.js": "211613262029b3002319ddac519393abf007b0fa582578f3bb51d31bcb344627",
+    "frontend/vite.config.js": "e7df9352d531fbc723fc75b053c2f0daf1b6426b459c933f8c59ce36546d8e34"
+  }
+}

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Play, RotateCcw, SlidersHorizontal } from "lucide-react";
 import Drawer from "./Drawer";
-import { money } from "../utils";
+import { money, centsToDollars, dollarsToCents } from "../utils";
 export default function LiveSimulatorDrawer({
   data,
   selectedId,
@@ -13,9 +13,7 @@ export default function LiveSimulatorDrawer({
 }) {
   const [id, setId] = useState(selectedId || data.deposits[0]?.deposit_id);
   const original = data.deposits.find((d) => d.deposit_id === id);
-  const [amount, setAmount] = useState(
-    (original.amount_cents / 100).toFixed(2),
-  );
+  const [amount, setAmount] = useState(centsToDollars(original.amount_cents));
   const [date, setDate] = useState(original.deposit_date);
   const [rules, setRules] = useState({ ...config });
   const [band, setBand] = useState(
@@ -32,21 +30,23 @@ export default function LiveSimulatorDrawer({
   const select = (id) => {
     const row = data.deposits.find((d) => d.deposit_id === id);
     setId(id);
-    setAmount((row.amount_cents / 100).toFixed(2));
+    setAmount(centsToDollars(row.amount_cents));
     setDate(row.deposit_date);
   };
   const submit = async (e) => {
     e.preventDefault();
     setError("");
-    const cents = Math.round(Number(amount) * 100);
+    const cents = dollarsToCents(amount);
     if (!Number.isSafeInteger(cents) || cents <= 0) {
-      setError("Enter a positive dollar amount.");
+      setError(
+        "Enter a positive amount within the browser’s exact-cent range.",
+      );
       return;
     }
     const nextConfig = {
       ...rules,
-      wire_fee_band_min_cents: band ? Math.round(Number(minimum) * 100) : null,
-      wire_fee_band_max_cents: band ? Math.round(Number(maximum) * 100) : null,
+      wire_fee_band_min_cents: band ? dollarsToCents(minimum) : null,
+      wire_fee_band_max_cents: band ? dollarsToCents(maximum) : null,
     };
     const ok = await onSolve(
       {
@@ -89,7 +89,6 @@ export default function LiveSimulatorDrawer({
               type="number"
               step="0.01"
               min="0.01"
-              max="90071992547409"
               required
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
@@ -231,26 +230,23 @@ export default function LiveSimulatorDrawer({
           </label>
         </div>
         <div className="simulator-tip">
-          <b>Try the discount window test</b>
+          <b>Test a later clearing date</b>
           <p>
-            Select Vanguard’s deposit and move its clearing date to 19 Oct 2026.
-            The same cash amount should shift from valid discount to chargeback
-            AR.
+            Move the selected deposit forward by 14 days, then re-solve to
+            evaluate its invoice payment-term windows.
           </p>
           <button
             type="button"
             className="text-button"
             onClick={() => {
-              const target = data.deposits.find((d) =>
-                /vanguard/i.test(d.raw_payer_memo),
-              );
-              if (target) {
-                select(target.deposit_id);
-                setDate("2026-10-19");
+              const shifted = new Date(`${date}T00:00:00Z`);
+              if (!Number.isNaN(shifted.getTime())) {
+                shifted.setUTCDate(shifted.getUTCDate() + 14);
+                setDate(shifted.toISOString().slice(0, 10));
               }
             }}
           >
-            Load benchmark scenario <RotateCcw size={12} />
+            Shift clearing date +14 days <RotateCcw size={12} />
           </button>
         </div>
         {(error || backendError) && (

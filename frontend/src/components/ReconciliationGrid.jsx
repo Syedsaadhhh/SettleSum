@@ -1,11 +1,5 @@
-import {
-  ArrowRight,
-  Check,
-  Search,
-  TriangleAlert,
-  ChevronDown,
-} from "lucide-react";
-import { useState } from "react";
+import { ArrowRight, Check, Search, TriangleAlert } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { dateLabel, money } from "../utils";
 export default function ReconciliationGrid({
   result,
@@ -15,6 +9,23 @@ export default function ReconciliationGrid({
   setFilter,
 }) {
   const [query, setQuery] = useState("");
+  const searchRef = useRef(null);
+  useEffect(() => {
+    const focusSearch = (event) => {
+      if (
+        event.key === "/" &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !document.querySelector('[role="dialog"]') &&
+        !event.target.closest("input,select,textarea,[contenteditable]")
+      ) {
+        event.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", focusSearch);
+    return () => document.removeEventListener("keydown", focusSearch);
+  }, []);
   const matches = result?.matches || [];
   const matched = matches.filter((x) => x.status === "MATCHED").length;
   const rows = matches.filter(
@@ -36,9 +47,7 @@ export default function ReconciliationGrid({
             {matches.length.toString().padStart(2, "0")}
           </span>
         </h2>
-        <span className="small-label">
-          USD <ChevronDown size={12} />
-        </span>
+        <span className="small-label">USD</span>
       </div>
       <div className="register-filters" aria-label="Filter deposits">
         {[
@@ -65,6 +74,7 @@ export default function ReconciliationGrid({
       <label className="search-box">
         <Search size={14} />
         <input
+          ref={searchRef}
           aria-label="Search deposits"
           placeholder="Search payer or deposit ID…"
           value={query}

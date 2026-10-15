@@ -36,20 +36,24 @@ Open **http://localhost:5173**. Vite proxies `/api` to Python on port 8000. Stop
 ## Verify
 
 ```bash
-python -m pytest -q backend/test_solver.py
+python scripts/audit_static.py
+python -m pytest -q backend/test_hard_pass.py
+python -m pytest -q backend
+npm --prefix frontend test
 npm --prefix frontend run build
 ```
 
-**29 Python tests** verify the current implementation. The suite covers the seven real computed benchmark matches and exception; a removed $15 fee; a one-cent amount edit; a changed clearing date; invoice-date edits; disabled fees; duplicate prevention; empty/negative/malformed input; PDF/text parsing; journal exports; custom fee bands; exact rounding; FIFO/remittance ranking; search budgets; and a 1,200-invoice input. An independent exhaustive oracle checks branch-and-bound results on generated small ledgers. GitHub Actions runs the Python suite and production frontend build on pushes and pull requests.
+**54 Python tests and 4 frontend currency tests** verify the current implementation. The dedicated five-point torture suite verifies the exact alien CSV, a one-cent mutation, earned-to-unearned date changes, double-entry invariants, and offline remittance extraction. See the [hard-pass audit report](docs/HARD_PASS_AUDIT.md). The suite covers the seven real computed benchmark matches and exception; a removed $15 fee; a one-cent amount edit; a changed clearing date; invoice-date edits; disabled fees; duplicate prevention; empty/negative/malformed input; PDF/text parsing; journal exports; custom fee bands; exact rounding; FIFO/remittance ranking; search budgets; and a 1,200-invoice input. An independent exhaustive oracle checks branch-and-bound results on generated small ledgers. GitHub Actions runs the static source guard, full Python suite, frontend currency tests, and production frontend build on pushes and pull requests.
 
 An optional full-stack browser smoke check is included in `scripts/verify_browser.py`. With Playwright installed and a Chromium executable available, run it against the live server:
 
 ```bash
 python -m pip install playwright
 python scripts/verify_browser.py --url http://localhost:8000 --browser /usr/bin/chromium
+python scripts/verify_hard_pass_browser.py --url http://localhost:8000 --browser /usr/bin/chromium
 ```
 
-It drives real uploads and API calls, verifies the date change, scoped debit memos, keyboard dialog behavior, new custom customers and remittance claims, and desktop/mobile overflow.
+These checks drive real uploads and API calls. The hard-pass browser script compares telemetry, invoice states, GL cells, and CSV/audit exports after amount/date mutations, wire-fee and discount toggles, custom fee bands, and offline claims. It also checks dataset replacement, keyboard controls, safe-integer rejection, and desktop/mobile overflow. No HTTP responses or computation results are mocked.
 
 ## Benchmark
 
@@ -93,7 +97,7 @@ For each resolved customer and deposit:
 
 Deposits apply in **clearing-date order, then deposit ID**. Matched invoices are reserved once for the run. This is a deterministic per-deposit policy; it is not a global optimization across every possible ordering of an entire bank batch.
 
-Dollar inputs use `int(round(float(value) * 100))` at ingress as specified. Cents inputs accept exact integers. Monetary inputs and ledger totals are constrained to signed 64-bit range. Search uses Python integer arithmetic without overflow or floating-point monetary operations. Discount rates are validated decimals; rational integer arithmetic rounds the selected net amount to cents using round-half-to-even. Use `amount_cents` for large values or direct API integrations that require exact integer ingress.
+Dollar inputs use `int(round(float(value) * 100))` at ingress as specified. Cents inputs accept exact integers. Monetary inputs and ledger totals are constrained to signed 64-bit range. Search uses Python integer arithmetic without overflow or floating-point monetary operations. Discount rates are validated decimals; rational integer arithmetic rounds the selected net amount to cents using round-half-to-even. Use `amount_cents` for large values or direct API integrations that require exact integer ingress. The browser validates all incoming/outgoing monetary numbers against its safe-integer limit (9,007,199,254,740,991 cents) and rejects larger values before applying source data; the Python API retains the full signed-64-bit currency domain. Browser dollar entry and formatting use integer/BigInt scaling, preserving the last cent without floating-point formatting drift.
 
 `perf_counter_ns()` measures actual solver execution, including state-vector construction and bound preparation. A node is one entered search call, including a root or call pruned by bounds. No artificial waiting or simulated telemetry is used. The summary adds each deposit's solver measurements; `request_time_ms` measures the broader reconciliation operation.
 
@@ -101,7 +105,7 @@ Dollar inputs use `int(round(float(value) * 100))` at ingress as specified. Cent
 
 Defaults: subset size **6**, node budget **2,000,000 per deposit**, entity confidence threshold **0.65**. Accepts up to 2,000 invoices and 500 deposits per request. Subset-size limit is configurable up to 20. Increasing it can make search expensive; branch-and-bound is still combinatorial.
 
-A budget interruption returns **SEARCH_LIMIT**, discards provisional matches, and emits no journal. Unresolved or ambiguous counterparties and impossible exact equations return **UNMATCHED_EXCEPTION**. The engine does not guess a customer from amount alone. Search duration depends on source data, configuration, and hardware; sub-5-ms operation is not guaranteed for arbitrary uploads.
+A budget interruption returns **SEARCH_LIMIT**, discards provisional matches, and emits no journal. Unresolved or ambiguous counterparties and impossible exact equations return **UNMATCHED_EXCEPTION**. The engine does not guess a customer from amount alone. Counterparty matching accepts generic token-prefix abbreviations of at least three letters, with ambiguous candidates still routed to review; no customer-specific name branches are used. Search duration depends on source data, configuration, and hardware; sub-5-ms operation is not guaranteed for arbitrary uploads.
 
 ## Data import
 
@@ -138,17 +142,18 @@ Set `GEMINI_API_KEY` in the Python process environment to enable optional **Gemi
 
 ## API
 
-| Endpoint                                         | Input                                               | Output                                                     |
-| ------------------------------------------------ | --------------------------------------------------- | ---------------------------------------------------------- |
-| `GET /api/health`                                | —                                                   | Engine health                                              |
-| `GET /api/sample-data`                           | —                                                   | Labeled synthetic source records                           |
-| `POST /api/reconcile`                            | Invoices, deposits, remittances, config             | Computed matches, alternatives, proofs, summary, telemetry |
-| `POST /api/parse-remittance`                     | JSON text, raw text/PDF, or multipart `file`        | Validated references, parser name, warnings                |
-| `POST /api/import-csv?kind=invoices`             | Raw UTF-8 CSV body                                  | Validated invoice rows                                     |
-| `POST /api/import-csv?kind=deposits`             | Raw UTF-8 CSV body                                  | Validated deposit rows                                     |
-| `POST /api/export-journal-csv?vendor=quickbooks` | Reconciliation request                              | QuickBooks journal CSV                                     |
-| `POST /api/export-journal-csv?vendor=xero`       | Reconciliation request                              | Xero manual journal CSV                                    |
-| `POST /api/export-chargebacks-csv`               | Reconciliation request; optional `deposit_id` query | Draft recovery/dispute debit memo summary                  |
+| Endpoint                                         | Input                                               | Output                                                                                  |
+| ------------------------------------------------ | --------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `GET /api/health`                                | —                                                   | Engine health                                                                           |
+| `GET /api/sample-data`                           | —                                                   | Labeled synthetic source records                                                        |
+| `POST /api/reconcile`                            | Invoices, deposits, remittances, config             | Computed matches, alternatives, proofs, summary, telemetry                              |
+| `POST /api/parse-remittance`                     | JSON text, raw text/PDF, or multipart `file`        | Validated references, parser name, warnings                                             |
+| `POST /api/import-csv?kind=invoices`             | Raw UTF-8 CSV body                                  | Validated invoice rows                                                                  |
+| `POST /api/import-csv?kind=deposits`             | Raw UTF-8 CSV body                                  | Validated deposit rows                                                                  |
+| `POST /api/export-journal-csv?vendor=quickbooks` | Reconciliation request                              | QuickBooks journal CSV                                                                  |
+| `POST /api/export-journal-csv?vendor=xero`       | Reconciliation request                              | Xero manual journal CSV                                                                 |
+| `POST /api/export-audit-json`                    | Reconciliation request                              | Fresh result, source inputs/configuration, source SHA-256, UTC timestamp, and telemetry |
+| `POST /api/export-chargebacks-csv`               | Reconciliation request; optional `deposit_id` query | Draft recovery/dispute debit memo summary                                               |
 
 Example request shape:
 
@@ -170,7 +175,7 @@ Example request shape:
 }
 ```
 
-Populate the arrays with records; empty ledgers intentionally return structured `422 VALIDATION_ERROR`. Non-solver endpoints report zero solver metrics. All API responses also expose `X-Solver-Time-Ms`, `X-Nodes-Explored`, and measured `X-Request-Time-Ms` headers; CSV responses carry telemetry in these headers. Exports recompute the current request and never trust client-supplied journal lines.
+Populate the arrays with records; empty ledgers intentionally return structured `422 VALIDATION_ERROR`. Non-solver endpoints report zero solver metrics. All API responses also expose `X-Solver-Time-Ms`, `X-Nodes-Explored`, and measured `X-Request-Time-Ms` headers; CSV responses carry telemetry in these headers. Exports recompute the current request and never trust client-supplied journal lines. The audit JSON’s source hash identifies its canonical inputs; it is not a digital signature.
 
 ## Accounting treatment
 
@@ -199,11 +204,16 @@ backend/
   remittance_parser.py    PDF/text and optional Gemini extraction
   ledger_exporter.py      Double-entry verification and vendor CSV formats
   test_solver.py          Benchmark, changes, failure cases, oracle checks
+  test_hard_pass.py       Five required API torture scenarios
+  test_audit_regressions.py  Validation, boundaries, ambiguity, and audit export
 frontend/
   src/App.jsx             Financial operations terminal
   src/components/         Register, proofs, telemetry, simulator, import drawers
 sample_data/              Synthetic CSV, JSON, text, and PDF fixtures
 scripts/dev.sh            FastAPI + Vite development startup
+scripts/audit_static.py   Source red-flag guard
+scripts/verify_hard_pass_browser.py  Real end-to-end mutation/export checks
+frontend/test/            Exact browser currency tests
 ```
 
 ## License

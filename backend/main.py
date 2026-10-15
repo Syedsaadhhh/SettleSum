@@ -1,6 +1,8 @@
 """Run from SettleSum/: uvicorn backend.main:app --host 0.0.0.0 --port 8000."""
 
 import csv
+import hashlib
+from datetime import datetime, timezone
 import io
 import json
 import os
@@ -174,6 +176,8 @@ async def import_csv(request: Request, kind: str):
         raise HTTPException(413, "CSV exceeds 5 MB")
     try:
         reader = csv.DictReader(io.StringIO(content.decode("utf-8-sig")))
+        if reader.fieldnames and len(reader.fieldnames) != len(set(reader.fieldnames)):
+            raise ValueError("CSV contains duplicate column names")
         rows = list(reader)
         if not rows:
             raise ValueError("CSV is empty; include a header and at least one data row")
@@ -226,6 +230,28 @@ def export_chargebacks(
         media_type="text/csv",
         headers={
             "Content-Disposition": 'attachment; filename="settlesum-chargeback-debit-memos.csv"'
+        },
+    )
+
+
+@app.post("/api/export-audit-json")
+def export_audit(payload: ReconcileRequest, request: Request):
+    """Recompute from source; never accept client-authored proofs or journals."""
+    result = run(request, payload)
+    source = payload.model_dump(mode="json")
+    canonical = json.dumps(source, sort_keys=True, separators=(",", ":")).encode()
+    report = {
+        "schema": "settlesum.reconciliation.audit.v1",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "source_sha256": hashlib.sha256(canonical).hexdigest(),
+        "source": source,
+        "result": result,
+    }
+    return Response(
+        json.dumps(report, indent=2),
+        media_type="application/json",
+        headers={
+            "Content-Disposition": 'attachment; filename="settlesum-reconciliation-audit.json"'
         },
     )
 

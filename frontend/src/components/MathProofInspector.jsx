@@ -354,7 +354,9 @@ export default function MathProofInspector({
                     <FileText size={15} />
                     <span>
                       {match.chargeback_memos.length} draft debit memo
-                      {match.chargeback_memos.length !== 1 ? "s" : ""} ready{" "}
+                      {match.chargeback_memos.length !== 1
+                        ? "s"
+                        : ""} ready{" "}
                       <small>Controller approval required before posting</small>
                     </span>
                   </span>

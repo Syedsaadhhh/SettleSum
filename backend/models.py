@@ -1,8 +1,9 @@
 """Validated external schemas. Money enters as cents and stays integer thereafter."""
 
 from datetime import date
+from collections.abc import Mapping
 from decimal import Decimal
-from typing import Literal
+from typing import Annotated
 import math
 import re
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -31,6 +32,8 @@ class Money(Schema):
     @model_validator(mode="before")
     @classmethod
     def normalize_money(cls, values):
+        if not isinstance(values, Mapping):
+            raise ValueError("Record must be a JSON object")
         values = dict(values)
         if "amount" in values:
             amount = values.pop("amount")
@@ -47,7 +50,7 @@ class Invoice(Money):
     customer_name: str = Field(min_length=1, max_length=200)
     invoice_date: date
     due_date: date
-    discount_terms: str = "Net 30"
+    discount_terms: str = Field(default="Net 30", max_length=128)
     discount_pct: Decimal = Field(
         default=Decimal("0"), ge=0, lt=1, max_digits=8, decimal_places=6
     )
@@ -56,9 +59,14 @@ class Invoice(Money):
     @model_validator(mode="before")
     @classmethod
     def parse_terms(cls, values):
+        if not isinstance(values, Mapping):
+            raise ValueError("Record must be a JSON object")
         values = dict(values)
-        term = re.search(
-            r"(\d+(?:\.\d+)?)\s*/\s*(\d+)", values.get("discount_terms", "")
+        terms = values.get("discount_terms", "")
+        term = (
+            re.search(r"(\d+(?:\.\d+)?)\s*/\s*(\d+)", terms)
+            if isinstance(terms, str) and len(terms) <= 128
+            else None
         )
         if term:
             if values.get("discount_pct") in (None, ""):
@@ -99,11 +107,15 @@ class Remittance(Schema):
 
 class SolverConfig(Schema):
     allow_wire_fees: bool = True
-    wire_fee_options_cents: list[int] = Field(
+    wire_fee_options_cents: list[Annotated[int, Field(strict=True)]] = Field(
         default_factory=lambda: [0, 1000, 1500, 2000, 2500, 3000], max_length=100
     )
-    wire_fee_band_min_cents: int | None = Field(default=None, ge=0, le=10000000)
-    wire_fee_band_max_cents: int | None = Field(default=None, ge=0, le=10000000)
+    wire_fee_band_min_cents: int | None = Field(
+        default=None, ge=0, le=10000000, strict=True
+    )
+    wire_fee_band_max_cents: int | None = Field(
+        default=None, ge=0, le=10000000, strict=True
+    )
     allow_discounts: bool = True
     max_subset_size: int = Field(default=6, ge=1, le=20)
     max_nodes: int = Field(default=2000000, ge=1, le=10000000)
@@ -156,8 +168,8 @@ class ReconcileRequest(Schema):
 class JournalEntryLine(Schema):
     gl_account: str
     account_name: str
-    debit_cents: int = Field(default=0, ge=0, le=MAX_CENTS)
-    credit_cents: int = Field(default=0, ge=0, le=MAX_CENTS)
+    debit_cents: int = Field(default=0, ge=0, le=MAX_CENTS, strict=True)
+    credit_cents: int = Field(default=0, ge=0, le=MAX_CENTS, strict=True)
     invoice_id: str | None = None
     document_id: str | None = None
     description: str = ""

@@ -23,12 +23,22 @@ def tokens(text):
     ]
 
 
+def token_similarity(left, right):
+    """Accept generic bank-feed truncation without customer-specific aliases."""
+    if left == right:
+        return 1.0
+    short, long = sorted((left, right), key=len)
+    if len(short) >= 3 and long.startswith(short):
+        return 0.9
+    return SequenceMatcher(None, left, right).ratio()
+
+
 def name_score(memo, name):
     payer, canonical = tokens(memo), tokens(name)
     if not canonical:
         return 0.0
     similarities = [
-        max((SequenceMatcher(None, token, other).ratio() for other in payer), default=0)
+        max((token_similarity(token, other) for other in payer), default=0)
         for token in canonical
     ]
     coverage = sum(1 if x >= 0.82 else 0 for x in similarities) / len(canonical)

@@ -18,7 +18,7 @@ Apply lump-sum deposits to valid invoice combinations; distinguish earned discou
 A multi-state choice branch-and-bound algorithm dynamically evaluates conditional invoice valuations in integer cents.
 
 ## Capabilities and Constraints
-CSV invoices and bank feeds; text/PDF remittances; deterministic entity resolution; live edits; journal and draft debit memo CSV exports. User-selected license: proprietary / all rights reserved. No hardcoded matches, artificial latency, invented telemetry, or external subset-sum solvers. Search limits must be visible. Synthetic data must be labeled. Recovery denotes identified debit memo amounts, not money collected.
+CSV invoices and bank feeds; fresh audit JSON exports with source inputs and measured results; text/PDF remittances; deterministic entity resolution; live edits; journal and draft debit memo CSV exports. User-selected license: proprietary / all rights reserved. No hardcoded matches, artificial latency, invented telemetry, or external subset-sum solvers. Search limits must be visible. Synthetic data must be labeled. Recovery denotes identified debit memo amounts, not money collected.
 
 ## Brand Commitments
 Institutional ledger terminal. User-pinned carbon/slate palette, sharp structural borders, dense tables, tabular monospace data, balanced double-entry proofs. No pills, gradients, decorative illustration, chat UI, or emoji.

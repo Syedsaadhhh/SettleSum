@@ -66,11 +66,13 @@ export default function LedgerHeader({ result, busy, dirty }) {
       <div className="ledger-proof-strip">
         <span>
           <ShieldCheck size={14} />
-          <b>DOUBLE-ENTRY VERIFIED</b>
+          <b>{s ? "DOUBLE-ENTRY VERIFIED" : "AWAITING LEDGER PROOF"}</b>
           <i className="strip-divider" /> ∑ DEBITS = ∑ CREDITS
         </span>
-        <span className={s?.ledger_variance_cents ? "red" : "green"}>
-          <Check size={13} />
+        <span
+          className={!s ? "muted" : s.ledger_variance_cents ? "red" : "green"}
+        >
+          {s && <Check size={13} />}
           {s ? money(s.ledger_variance_cents) : "—"} DR / CR VARIANCE
         </span>
       </div>

@@ -17,6 +17,12 @@ AMOUNT = r"\$\s*([\d,]+(?:\.\d{1,2})?)"
 
 def regex_parse(text, document_id="uploaded-remittance", deposit_id=None):
     customer = re.search(r"(?:customer|payer|from)\s*:\s*([^\n;]+)", text, re.I)
+    if not customer:
+        customer = re.search(
+            r"remittance\s+advice:\s*(.+?)\s+(?:applying|paying|remitting)\b",
+            text,
+            re.I,
+        )
     references = {}
     for line in text.splitlines():
         ids = list(re.finditer(INVOICE_PATTERN, line, re.I))
